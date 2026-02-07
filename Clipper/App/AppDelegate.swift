@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
+    private var autoPasteItem: NSMenuItem?
     private let store = ClipboardStore()
     private lazy var watcher = ClipboardWatcher(store: store)
     private lazy var popupController = PopupWindowController(store: store)
@@ -28,6 +29,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let openItem = NSMenuItem(title: "Open Clipboard History", action: #selector(togglePopup), keyEquivalent: "")
         openItem.target = self
         menu.addItem(openItem)
+        let autoPasteItem = NSMenuItem(title: "Auto-Paste on Enter", action: #selector(toggleAutoPaste), keyEquivalent: "")
+        autoPasteItem.target = self
+        autoPasteItem.state = AppSettings.autoPasteEnabled ? .on : .off
+        menu.addItem(autoPasteItem)
+        self.autoPasteItem = autoPasteItem
         menu.addItem(NSMenuItem.separator())
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
@@ -54,5 +60,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func quitApp() {
         NSApp.terminate(nil)
+    }
+
+    @objc private func toggleAutoPaste() {
+        AppSettings.autoPasteEnabled.toggle()
+        autoPasteItem?.state = AppSettings.autoPasteEnabled ? .on : .off
+        if AppSettings.autoPasteEnabled {
+            AutoPaste.requestIfNeeded()
+            if !AutoPaste.isTrusted(prompt: false) {
+                showAccessibilityAlert()
+            }
+        }
+    }
+
+    private func showAccessibilityAlert() {
+        let alert = NSAlert()
+        alert.messageText = "Enable Accessibility for Auto-Paste"
+        alert.informativeText = "To use Auto-Paste on Enter, allow Clipper in System Settings > Privacy & Security > Accessibility."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 }

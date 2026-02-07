@@ -28,29 +28,25 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
         panel.standardWindowButton(.closeButton)?.isHidden = true
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
+        super.init(window: panel)
+        window?.delegate = self
 
-        let contentView = ClipboardPopupView(store: store, viewModel: viewModel) { [weak self, weak panel] item in
+        let contentView = ClipboardPopupView(store: store, viewModel: viewModel) { [weak self] item in
             Self.copyToPasteboard(item.fullText)
-            guard let self else {
-                panel?.close()
-                return
-            }
+            guard let self else { return }
             let targetApp = previousApp
             if AppSettings.autoPasteEnabled {
                 closePopup(restoreFocus: false)
                 AutoPaste.paste(into: targetApp)
             } else {
-                panel?.close()
+                close()
             }
-        } onClose: { [weak panel] in
-            panel?.close()
+        } onClose: { [weak self] in
+            self?.close()
         }
 
         let hostingController = NSHostingController(rootView: contentView)
         panel.contentView = hostingController.view
-
-        super.init(window: panel)
-        window?.delegate = self
     }
 
     required init?(coder: NSCoder) {

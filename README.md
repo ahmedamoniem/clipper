@@ -14,13 +14,15 @@ A minimal macOS menu bar clipboard history app (text only). It runs in the backg
 **Hotkey**
 - Control+V toggles the clipboard history popup.
 - Selecting an item copies the full text back to the clipboard (paste with Cmd+V in your app).
+- Optional: Enable "Auto-Paste on Enter" from the menu to paste automatically (requires Accessibility permission).
 
 **Notes & Limitations**
 - Text-only clipboard history (no images yet).
-- Does not auto-paste into the front app.
+- Auto-paste is optional and disabled by default.
 - History is stored locally in memory and persisted to `~/Library/Application Support/Clipper/clipboard_history.json` (not encrypted).
 - You can clear stored history by deleting that file while the app is closed.
 - Clicking outside the popup closes it.
+ - Auto-paste uses macOS Accessibility permission and sends Cmd+V to the previously focused app.
 
 **Future Work (Not Implemented)**
 - Rich content and image support
@@ -28,3 +30,6 @@ A minimal macOS menu bar clipboard history app (text only). It runs in the backg
 - Pin/favorite items
 - Configurable hotkeys
 - Sync or cloud backup
+
+
+storageURLOverride

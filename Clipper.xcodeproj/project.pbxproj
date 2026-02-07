@@ -19,6 +19,8 @@
 		CD293183DB5B4EB09B83CFAE /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8760A15EF3D841829B533387 /* Logging.swift */; };
 		D04FAAA4B99D4DB4AD90F183 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A0CC24BFC5C840DA9E66B4B3 /* Carbon.framework */; };
 		00C76C3EC8A348F98B9DDAA3 /* SearchFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37F788998EBA4E30A3587406 /* SearchFieldView.swift */; };
+		16B6D367E80A4A2082FD13F3 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4CB0C592D743BE92737B8B /* AppSettings.swift */; };
+		1C47B41BFD6C46DFBAE38BFB /* AutoPaste.swift in Sources */ = {isa = PBXBuildFile; fileRef = C481D187721542EF8E6F3778 /* AutoPaste.swift */; };
 		6EF0DF62C06042F984DDB9DE /* ClipboardStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A65C7E2A36A4DE6BA36E48A /* ClipboardStoreTests.swift */; };
 		0B31C9B072E64E599F2D5C14 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E31617DAE354CC0ABD7A82D /* XCTest.framework */; };
 /* End PBXBuildFile section */
@@ -36,6 +38,8 @@
 		889CE0E00ECF4933B59A5AC6 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
 		8760A15EF3D841829B533387 /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
 		37F788998EBA4E30A3587406 /* SearchFieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchFieldView.swift; sourceTree = "<group>"; };
+		9A4CB0C592D743BE92737B8B /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		C481D187721542EF8E6F3778 /* AutoPaste.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoPaste.swift; sourceTree = "<group>"; };
 		A0CC24BFC5C840DA9E66B4B3 /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		B0AD73486DB14DDC8F737467 /* Clipper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = Clipper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A65C7E2A36A4DE6BA36E48A /* ClipboardStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardStoreTests.swift; sourceTree = "<group>"; };
@@ -121,6 +125,8 @@
 		73499CE2554C451DA488C8E9 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				9A4CB0C592D743BE92737B8B /* AppSettings.swift */,
+				C481D187721542EF8E6F3778 /* AutoPaste.swift */,
 				8760A15EF3D841829B533387 /* Logging.swift */,
 			);
 			path = Utils;
@@ -250,6 +256,8 @@
 				8EDE5E4AC0004146976D57BE /* ClipboardPopupView.swift in Sources */,
 				4777C4A8FB064F84AC9F84BC /* ClipboardRowView.swift in Sources */,
 				00C76C3EC8A348F98B9DDAA3 /* SearchFieldView.swift in Sources */,
+				16B6D367E80A4A2082FD13F3 /* AppSettings.swift in Sources */,
+				1C47B41BFD6C46DFBAE38BFB /* AutoPaste.swift in Sources */,
 				EBD00B2715FF48948451193B /* HotkeyManager.swift in Sources */,
 				CD293183DB5B4EB09B83CFAE /* Logging.swift in Sources */,
 			);
