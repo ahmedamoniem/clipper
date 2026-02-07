@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 final class ClipboardWatcher {
     private let store: ClipboardStore
     private var timer: Timer?

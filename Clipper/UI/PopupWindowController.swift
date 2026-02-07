@@ -1,9 +1,11 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 final class PopupWindowController: NSWindowController, NSWindowDelegate {
     private let store: ClipboardStore
     private let viewModel = PopupViewModel()
+    private var previousApp: NSRunningApplication?
 
     var isVisible: Bool {
         window?.isVisible ?? false
@@ -27,9 +29,19 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
 
-        let contentView = ClipboardPopupView(store: store, viewModel: viewModel) { [weak panel] item in
+        let contentView = ClipboardPopupView(store: store, viewModel: viewModel) { [weak self, weak panel] item in
             Self.copyToPasteboard(item.fullText)
-            panel?.close()
+            guard let self else {
+                panel?.close()
+                return
+            }
+            let targetApp = previousApp
+            if AppSettings.autoPasteEnabled {
+                closePopup(restoreFocus: false)
+                AutoPaste.paste(into: targetApp)
+            } else {
+                panel?.close()
+            }
         } onClose: { [weak panel] in
             panel?.close()
         }
@@ -48,13 +60,14 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
     func show() {
         guard let window = window else { return }
         viewModel.resetForShow()
+        previousApp = NSWorkspace.shared.frontmostApplication
         position(window: window)
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
 
     override func close() {
-        window?.orderOut(nil)
+        closePopup(restoreFocus: true)
     }
 
     func windowDidResignKey(_ notification: Notification) {
@@ -74,6 +87,22 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
         y = max(visibleFrame.minY, min(y, visibleFrame.maxY - size.height))
 
         window.setFrameOrigin(NSPoint(x: x, y: y))
+    }
+
+    private func closePopup(restoreFocus: Bool) {
+        window?.orderOut(nil)
+        if restoreFocus {
+            restorePreviousApp()
+        }
+    }
+
+    private func restorePreviousApp() {
+        guard let previousApp else { return }
+        self.previousApp = nil
+        if previousApp.bundleIdentifier == Bundle.main.bundleIdentifier {
+            return
+        }
+        previousApp.activate(options: [.activateIgnoringOtherApps])
     }
 
     private static func copyToPasteboard(_ text: String) {
