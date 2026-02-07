@@ -1,4 +1,4 @@
-# Clipper (MVP)
+# Clipper
 
 A minimal macOS menu bar clipboard history app (text only). It runs in the background, tracks the last 10 text clipboard entries, and shows a searchable popup on Control+V.
 
