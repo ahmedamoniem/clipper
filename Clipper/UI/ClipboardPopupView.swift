@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct ClipboardPopupView: View {
-    @ObservedObject var store: ClipboardStore
-    @ObservedObject var viewModel: PopupViewModel
+    var store: ClipboardStore
+    @Bindable var viewModel: PopupViewModel
     let onSelect: (ClipboardItem) -> Void
     let onClose: () -> Void
 
@@ -26,18 +26,20 @@ struct ClipboardPopupView: View {
 
             if filteredItems.isEmpty {
                 Text("No clipboard items")
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(selection: $viewModel.selectedId) {
                     ForEach(filteredItems) { item in
-                        ClipboardRowView(item: item)
-                            .contentShape(Rectangle())
-                            .tag(item.id)
-                            .onTapGesture {
-                                viewModel.selectedId = item.id
-                                select(item)
-                            }
+                        Button {
+                            viewModel.selectedId = item.id
+                            select(item)
+                        } label: {
+                            ClipboardRowView(item: item)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .tag(item.id)
                     }
                 }
                 .listStyle(.inset)

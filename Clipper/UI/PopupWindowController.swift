@@ -108,10 +108,12 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
     }
 }
 
-final class PopupViewModel: ObservableObject {
-    @Published var searchText: String = ""
-    @Published var selectedId: ClipboardItem.ID?
-    @Published var focusToken: UUID = UUID()
+@Observable
+@MainActor
+final class PopupViewModel {
+    var searchText: String = ""
+    var selectedId: ClipboardItem.ID?
+    var focusToken: UUID = UUID()
 
     func resetForShow() {
         searchText = ""

@@ -1,8 +1,10 @@
-import Foundation
+import SwiftUI
+import Observation
 
+@Observable
 @MainActor
-final class ClipboardStore: ObservableObject {
-    @Published private(set) var items: [ClipboardItem] = []
+final class ClipboardStore {
+    private(set) var items: [ClipboardItem] = []
 
     private let maxItems = 10
     private let storageURLOverride: URL?

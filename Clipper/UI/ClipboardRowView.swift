@@ -6,7 +6,7 @@ struct ClipboardRowView: View {
     var body: some View {
         Text(item.previewText)
             .font(.system(size: 13))
-            .foregroundColor(.primary)
+            .foregroundStyle(.primary)
             .lineLimit(2)
             .truncationMode(.tail)
             .frame(maxWidth: .infinity, alignment: .leading)
