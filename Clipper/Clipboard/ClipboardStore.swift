@@ -1,10 +1,11 @@
-import Foundation
+import SwiftUI
+import Observation
 
+@Observable
 @MainActor
-final class ClipboardStore: ObservableObject {
-    @Published private(set) var items: [ClipboardItem] = []
+final class ClipboardStore {
+    private(set) var items: [ClipboardItem] = []
 
-    private let maxItems = 10
     private let storageURLOverride: URL?
     private let saveDelay: TimeInterval
     private let saveQueue = DispatchQueue(label: "Clipper.ClipboardStore.Save", qos: .utility)
@@ -14,24 +15,76 @@ final class ClipboardStore: ObservableObject {
         self.storageURLOverride = storageURL
         self.saveDelay = saveDelay
         loadFromDisk()
+        
+        observeHistoryLimit()
+    }
+
+    private func observeHistoryLimit() {
+        _ = withObservationTracking {
+            AppSettings.shared.historyLimit
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.pruneToLimit()
+                // Re-establish tracking for subsequent changes
+                self?.observeHistoryLimit()
+            }
+        }
     }
 
     func add(text: String) {
         let normalized = normalize(text)
         guard !normalized.isEmpty else { return }
 
+        // Don't remove if the existing item is pinned, just keep it
         if let existingIndex = items.firstIndex(where: { normalize($0.fullText) == normalized }) {
+            if items[existingIndex].isPinned {
+                // If pinned, just update its timestamp to bring it to the top of history? 
+                // No, let's keep pins stable and just not add a duplicate to history.
+                return 
+            }
             items.remove(at: existingIndex)
         }
 
-        let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date())
+        let sourceAppId = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date(), sourceAppBundleId: sourceAppId, isPinned: false)
         items.insert(item, at: 0)
 
-        if items.count > maxItems {
-            items = Array(items.prefix(maxItems))
-        }
-
+        pruneToLimit()
         saveDebounced(snapshot: items)
+    }
+
+    func togglePin(id: UUID) {
+        if let index = items.firstIndex(where: { $0.id == id }) {
+            items[index].isPinned.toggle()
+            // Prune if we just unpinned something while over the limit
+            if !items[index].isPinned {
+                pruneToLimit()
+            }
+            saveDebounced(snapshot: items)
+        }
+    }
+
+    private func pruneToLimit() {
+        let limit = AppSettings.shared.historyLimit
+        
+        // Count regular items (not pinned)
+        let pinnedCount = items.filter { $0.isPinned }.count
+        let totalAllowed = limit + pinnedCount
+        
+        if items.count > totalAllowed {
+            // We need to remove the oldest non-pinned items
+            var nonPinnedIndices = items.enumerated()
+                .filter { !$0.element.isPinned }
+                .map { $0.offset }
+            
+            if nonPinnedIndices.count > limit {
+                let toRemove = nonPinnedIndices.suffix(nonPinnedIndices.count - limit)
+                // Remove from highest index to lowest to avoid shifting
+                for index in toRemove.sorted(by: >) {
+                    items.remove(at: index)
+                }
+            }
+        }
     }
 
     func filteredItems(query: String) -> [ClipboardItem] {
@@ -57,7 +110,9 @@ final class ClipboardStore: ObservableObject {
         do {
             let data = try Data(contentsOf: url)
             let decoded = try JSONDecoder().decode([ClipboardItem].self, from: data)
-            items = Array(decoded.prefix(maxItems))
+            // Load everything, then let pruneToLimit handle the logic correctly
+            items = decoded
+            pruneToLimit()
         } catch {
             Logging.debug("Failed to load history: \(error)")
         }

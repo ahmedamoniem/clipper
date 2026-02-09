@@ -14,7 +14,9 @@ final class ClipboardWatcher {
     func start() {
         timer?.invalidate()
         let newTimer = Timer(timeInterval: 0.4, repeats: true) { [weak self] _ in
-            self?.checkPasteboard()
+            Task { @MainActor in
+                self?.checkPasteboard()
+            }
         }
         timer = newTimer
         RunLoop.main.add(newTimer, forMode: .common)

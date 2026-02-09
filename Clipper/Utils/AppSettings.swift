@@ -1,10 +1,23 @@
-import Foundation
+import SwiftUI
+import Observation
 
-enum AppSettings {
-    private static let autoPasteKey = "AutoPasteEnabled"
+@Observable
+final class AppSettings {
+    static let shared = AppSettings()
+    private let historyLimitKey = "HistoryLimit"
 
-    static var autoPasteEnabled: Bool {
-        get { UserDefaults.standard.bool(forKey: autoPasteKey) }
-        set { UserDefaults.standard.set(newValue, forKey: autoPasteKey) }
+    var historyLimit: Int {
+        get {
+            access(keyPath: \.historyLimit)
+            let limit = UserDefaults.standard.integer(forKey: historyLimitKey)
+            return limit == 0 ? 500 : limit
+        }
+        set {
+            withMutation(keyPath: \.historyLimit) {
+                UserDefaults.standard.set(newValue, forKey: historyLimitKey)
+            }
+        }
     }
+
+    private init() {}
 }
