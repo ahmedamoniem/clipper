@@ -9,12 +9,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var watcher = ClipboardWatcher(store: store)
     private lazy var popupController = PopupWindowController(store: store)
     private let hotkeyManager = HotkeyManager()
+    private var preferencesWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         setupStatusItem()
         setupHotkey()
         watcher.start()
+
+        NotificationCenter.default.addObserver(self, selector: #selector(updateGlobalHotkey), name: Notification.Name.hotkeySettingsChanged, object: nil)
     }
 
     private func setupStatusItem() {
@@ -29,12 +32,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let openItem = NSMenuItem(title: "Open Clipboard History", action: #selector(togglePopup), keyEquivalent: "")
         openItem.target = self
         menu.addItem(openItem)
+
         let autoPasteItem = NSMenuItem(title: "Auto-Paste on Enter", action: #selector(toggleAutoPaste), keyEquivalent: "")
         autoPasteItem.target = self
         autoPasteItem.state = AppSettings.autoPasteEnabled ? .on : .off
         menu.addItem(autoPasteItem)
         self.autoPasteItem = autoPasteItem
+
+        let preferencesItem = NSMenuItem(title: "Preferences...", action: #selector(showPreferences), keyEquivalent: ",")
+        preferencesItem.target = self
+        menu.addItem(preferencesItem)
+
         menu.addItem(NSMenuItem.separator())
+
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -47,7 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager.onHotKey = { [weak self] in
             self?.togglePopup()
         }
-        hotkeyManager.register()
+        hotkeyManager.registerCurrentSettings()
     }
 
     @objc private func togglePopup() {
@@ -80,5 +90,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
         alert.runModal()
+    }
+
+    @objc private func showPreferences() {
+        if let window = preferencesWindow {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let preferencesView = HotkeyPreferencesView()
+        let hostingController = NSHostingController(rootView: preferencesView)
+        let window = NSWindow(contentViewController: hostingController)
+        window.title = "Preferences"
+        window.styleMask = [.titled, .closable]
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+        window.setContentSize(NSSize(width: 700, height: 500))
+        window.center()
+        window.isReleasedWhenClosed = false
+        preferencesWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func updateGlobalHotkey() {
+        hotkeyManager.unregister()
+        hotkeyManager.registerCurrentSettings()
     }
 }

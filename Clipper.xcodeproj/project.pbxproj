@@ -16,6 +16,9 @@
 		6EF0DF62C06042F984DDB9DE /* ClipboardStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A65C7E2A36A4DE6BA36E48A /* ClipboardStoreTests.swift */; };
 		814D8F752F39AD9F00F5A0F8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 814D8F742F39AD9F00F5A0F8 /* Assets.xcassets */; };
 		814D8F762F39AD9F00F5A0F8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 814D8F742F39AD9F00F5A0F8 /* Assets.xcassets */; };
+		814D8F7C2F39C60100F5A0F8 /* HotkeyPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 814D8F7B2F39C60100F5A0F8 /* HotkeyPreferencesView.swift */; };
+		814D8F7D2F39C60100F5A0F8 /* HotkeyCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 814D8F7A2F39C60100F5A0F8 /* HotkeyCaptureView.swift */; };
+		814D8F7F2F39C64100F5A0F8 /* NotificationNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 814D8F7E2F39C64100F5A0F8 /* NotificationNames.swift */; };
 		8EDE5E4AC0004146976D57BE /* ClipboardPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCDFDCF112D7473F954176CE /* ClipboardPopupView.swift */; };
 		9D00B21B30DC4682B8E97699 /* PopupWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8EE1155D76541EEBB0376B3 /* PopupWindowController.swift */; };
 		C19C207EEA8040BD988D5E10 /* ClipboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACEFC4C609E45BD8A80200C /* ClipboardStore.swift */; };
@@ -47,6 +50,9 @@
 		686022D606884AE69BDC10A8 /* ClipperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = ClipperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6E31617DAE354CC0ABD7A82D /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		814D8F742F39AD9F00F5A0F8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		814D8F7A2F39C60100F5A0F8 /* HotkeyCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyCaptureView.swift; sourceTree = "<group>"; };
+		814D8F7B2F39C60100F5A0F8 /* HotkeyPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyPreferencesView.swift; sourceTree = "<group>"; };
+		814D8F7E2F39C64100F5A0F8 /* NotificationNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationNames.swift; sourceTree = "<group>"; };
 		830CD38CA2064B87A91701EB /* ClipboardWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardWatcher.swift; sourceTree = "<group>"; };
 		8710474D390A4B1AB4DE33B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8760A15EF3D841829B533387 /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
@@ -127,6 +133,8 @@
 		5616A1465BB44B749175E393 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				814D8F7A2F39C60100F5A0F8 /* HotkeyCaptureView.swift */,
+				814D8F7B2F39C60100F5A0F8 /* HotkeyPreferencesView.swift */,
 				D8EE1155D76541EEBB0376B3 /* PopupWindowController.swift */,
 				FCDFDCF112D7473F954176CE /* ClipboardPopupView.swift */,
 				51C0BB69F4DC48DFA723630D /* ClipboardRowView.swift */,
@@ -138,6 +146,7 @@
 		73499CE2554C451DA488C8E9 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				814D8F7E2F39C64100F5A0F8 /* NotificationNames.swift */,
 				9A4CB0C592D743BE92737B8B /* AppSettings.swift */,
 				C481D187721542EF8E6F3778 /* AutoPaste.swift */,
 				8760A15EF3D841829B533387 /* Logging.swift */,
@@ -273,6 +282,8 @@
 			files = (
 				CF9D010E0470429AAD6015E3 /* ClipboardHistoryApp.swift in Sources */,
 				FBEDF13C0D71413C978C7E4C /* AppDelegate.swift in Sources */,
+				814D8F7C2F39C60100F5A0F8 /* HotkeyPreferencesView.swift in Sources */,
+				814D8F7D2F39C60100F5A0F8 /* HotkeyCaptureView.swift in Sources */,
 				F86662812580466591FF8664 /* ClipboardWatcher.swift in Sources */,
 				6E19AC45792B4E0289687820 /* ClipboardItem.swift in Sources */,
 				C19C207EEA8040BD988D5E10 /* ClipboardStore.swift in Sources */,
@@ -282,6 +293,7 @@
 				00C76C3EC8A348F98B9DDAA3 /* SearchFieldView.swift in Sources */,
 				16B6D367E80A4A2082FD13F3 /* AppSettings.swift in Sources */,
 				1C47B41BFD6C46DFBAE38BFB /* AutoPaste.swift in Sources */,
+				814D8F7F2F39C64100F5A0F8 /* NotificationNames.swift in Sources */,
 				EBD00B2715FF48948451193B /* HotkeyManager.swift in Sources */,
 				CD293183DB5B4EB09B83CFAE /* Logging.swift in Sources */,
 			);
