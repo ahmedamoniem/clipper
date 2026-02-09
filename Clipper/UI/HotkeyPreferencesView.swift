@@ -6,15 +6,17 @@ struct HotkeyPreferencesView: View {
     @State private var selectedTab: PreferenceTab = .hotkey
     
     enum PreferenceTab: String, CaseIterable, Identifiable {
-        case hotkey = "Hotkey"
         case general = "General"
+        case hotkey = "Hotkey"
+        case about = "About"
         
         var id: String { rawValue }
         
         var icon: String {
             switch self {
-            case .hotkey: return "keyboard"
             case .general: return "gearshape"
+            case .hotkey: return "keyboard"
+            case .about: return "info.circle"
             }
         }
     }
@@ -29,14 +31,16 @@ struct HotkeyPreferencesView: View {
         } detail: {
             Group {
                 switch selectedTab {
+                case .general:
+                    GeneralTab()
                 case .hotkey:
                     if #available(macOS 14.0, *) {
                         HotkeyTab()
                     } else {
                         // Fallback on earlier versions
                     }
-                case .general:
-                    GeneralTab()
+                case .about:
+                    AboutTab()
                 }
             }
         }
@@ -116,8 +120,14 @@ struct GeneralTab: View {
                 Text("Clipboard Behavior")
             } footer: {
                 if autoPasteEnabled {
-                    Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
-                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.orange)
+                        Button("Open Accessibility Settings") {
+                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                        }
+                        .controlSize(.small)
+                    }
                 } else {
                     Text("Automatically paste the selected item when pressing Enter")
                 }
@@ -126,5 +136,29 @@ struct GeneralTab: View {
         .formStyle(.grouped)
         .navigationTitle("General")
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
+struct AboutTab: View {
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Version:") {
+                    Text(appVersion)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Application")
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle("About")
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+    
+    private var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+        return "\(version) (\(build))"
     }
 }
