@@ -34,7 +34,8 @@ final class ClipboardStore {
             items.remove(at: existingIndex)
         }
 
-        let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date())
+        let sourceAppId = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date(), sourceAppBundleId: sourceAppId)
         items.insert(item, at: 0)
 
         pruneToLimit()

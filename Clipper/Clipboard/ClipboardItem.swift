@@ -4,6 +4,7 @@ struct ClipboardItem: Identifiable, Codable, Equatable {
     let id: UUID
     let fullText: String
     let timestamp: Date
+    let sourceAppBundleId: String?
 
     var previewText: String {
         ClipboardItem.makePreview(from: fullText)
