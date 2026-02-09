@@ -35,7 +35,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
             Self.copyToPasteboard(item.fullText)
             guard let self else { return }
             let targetApp = previousApp
-            if AppSettings.autoPasteEnabled {
+            if AutoPaste.isTrusted {
                 closePopup(restoreFocus: false)
                 AutoPaste.paste(into: targetApp)
             } else {
@@ -55,7 +55,8 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
 
     func show() {
         guard let window = window else { return }
-        viewModel.resetForShow()
+        let defaultSelectionId = store.items.first(where: { !$0.isPinned })?.id ?? store.items.first?.id
+        viewModel.resetForShow(defaultSelectionId: defaultSelectionId)
         previousApp = NSWorkspace.shared.frontmostApplication
         position(window: window)
         NSApp.activate(ignoringOtherApps: true)
@@ -98,7 +99,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
         if previousApp.bundleIdentifier == Bundle.main.bundleIdentifier {
             return
         }
-        previousApp.activate(options: [.activateIgnoringOtherApps])
+        previousApp.activate(options: [])
     }
 
     private static func copyToPasteboard(_ text: String) {
@@ -108,14 +109,23 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
     }
 }
 
-final class PopupViewModel: ObservableObject {
-    @Published var searchText: String = ""
-    @Published var selectedId: ClipboardItem.ID?
-    @Published var focusToken: UUID = UUID()
+@Observable
+@MainActor
+final class PopupViewModel {
+    var searchText: String = ""
+    var selectedId: ClipboardItem.ID?
+    var focusToken: UUID = UUID()
+    var showSettings: Bool = false
+    var isTrusted: Bool = AutoPaste.isTrusted
 
-    func resetForShow() {
+    func resetForShow(defaultSelectionId: ClipboardItem.ID?) {
         searchText = ""
-        selectedId = nil
+        selectedId = defaultSelectionId
         focusToken = UUID()
+        refreshTrustStatus()
+    }
+
+    func refreshTrustStatus() {
+        isTrusted = AutoPaste.isTrusted
     }
 }

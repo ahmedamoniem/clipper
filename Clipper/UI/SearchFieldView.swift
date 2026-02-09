@@ -47,24 +47,22 @@ struct SearchFieldView: NSViewRepresentable {
         }
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-            switch commandSelector {
-            case #selector(NSResponder.moveDown(_:)):
+            if commandSelector == #selector(NSResponder.moveDown(_:)) {
                 parent.onMove(.down)
                 return true
-            case #selector(NSResponder.moveUp(_:)):
+            } else if commandSelector == #selector(NSResponder.moveUp(_:)) {
                 parent.onMove(.up)
                 return true
-            case #selector(NSResponder.insertNewline(_:)),
-                 #selector(NSResponder.insertLineBreak(_:)),
-                 #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)):
+            } else if commandSelector == #selector(NSResponder.insertNewline(_:)) ||
+                        commandSelector == #selector(NSResponder.insertLineBreak(_:)) ||
+                        commandSelector == #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)) {
                 parent.onEnter()
                 return true
-            case #selector(NSResponder.cancelOperation(_:)):
+            } else if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
                 parent.onEscape()
                 return true
-            default:
-                return false
             }
+            return false
         }
     }
 }
