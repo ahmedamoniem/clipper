@@ -3,15 +3,21 @@ import Carbon
 import ApplicationServices
 
 enum AutoPaste {
-    static func requestIfNeeded() {
+    /// Silently checks if the app is trusted.
+    static var isTrusted: Bool {
+        isTrusted(prompt: false)
+    }
+
+    /// Requests permission by showing the system prompt.
+    static func requestPermission() {
         _ = isTrusted(prompt: true)
     }
 
     static func paste(into app: NSRunningApplication?) {
         guard let app else { return }
-        guard isTrusted(prompt: true) else { return }
+        guard isTrusted else { return }
 
-        app.activate(options: [.activateIgnoringOtherApps])
+        app.activate(options: [])
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
             sendCmdV()
         }

@@ -46,3 +46,5 @@ playground.xcworkspace
 *.dSYM.zip
 *.dSYM
 /.idea/
+.gemini/
+GEMINI.md
