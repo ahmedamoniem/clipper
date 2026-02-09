@@ -95,6 +95,67 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    func testPinnedItemsExemptFromPruning() {
+        withTempURL { url in
+            let store = ClipboardStore(storageURL: url, saveDelay: 0)
+            AppSettings.shared.historyLimit = 5
+            
+            store.add(text: "Pin Me")
+            let pinId = store.items.first!.id
+            store.togglePin(id: pinId)
+            
+            // Add 10 more items
+            for i in 1...10 {
+                store.add(text: "Item \(i)")
+            }
+            
+            // Should have 5 recent + 1 pinned = 6 total
+            XCTAssertEqual(store.items.count, 6)
+            XCTAssertTrue(store.items.contains(where: { $0.id == pinId }))
+        }
+    }
+
+    func testUnpinningTriggersPrune() {
+        withTempURL { url in
+            let store = ClipboardStore(storageURL: url, saveDelay: 0)
+            AppSettings.shared.historyLimit = 2
+            
+            store.add(text: "Item 1")
+            store.add(text: "Item 2")
+            store.add(text: "To Pin")
+            
+            let pinId = store.items.first!.id
+            store.togglePin(id: pinId)
+            
+            XCTAssertEqual(store.items.count, 3) // 2 recent + 1 pinned
+            
+            store.togglePin(id: pinId) // Unpin
+            
+            XCTAssertEqual(store.items.count, 2) // Should prune down to limit
+        }
+    }
+
+    func testDecodingOldSchemaSafe() {
+        withTempURL { url in
+            // JSON missing isPinned and sourceAppBundleId
+            let oldJson = """
+            [
+                {
+                    "id": "E621E1F8-C36C-495A-93FC-0C247A3E6E5F",
+                    "fullText": "Old Data",
+                    "timestamp": 728956800.0
+                }
+            ]
+            """
+            try? oldJson.data(using: .utf8)?.write(to: url)
+            
+            let store = ClipboardStore(storageURL: url, saveDelay: 0)
+            XCTAssertEqual(store.items.count, 1)
+            XCTAssertEqual(store.items.first?.fullText, "Old Data")
+            XCTAssertFalse(store.items.first?.isPinned ?? true)
+        }
+    }
+
     private func withTempURL(_ body: (URL) throws -> Void) rethrows {
         let directory = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
         let filename = "clipper_test_\(UUID().uuidString).json"
