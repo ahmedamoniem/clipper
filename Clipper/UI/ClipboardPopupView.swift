@@ -56,6 +56,13 @@ struct ClipboardPopupView: View {
                             }
                     }
                     .listStyle(.inset)
+                    .onChange(of: viewModel.selectedId) { _, newId in
+                        if let newId {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                proxy.scrollTo(newId, anchor: .none)
+                            }
+                        }
+                    }
                     .onChange(of: viewModel.searchText) { _, _ in
                         // Auto-select first item when filtering
                         viewModel.selectedId = filteredItems.first?.id
