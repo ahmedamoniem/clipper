@@ -5,6 +5,15 @@ struct ClipboardItem: Identifiable, Codable, Equatable {
     let fullText: String
     let timestamp: Date
     let sourceAppBundleId: String?
+    var isPinned: Bool
+
+    init(id: UUID, fullText: String, timestamp: Date, sourceAppBundleId: String? = nil, isPinned: Bool = false) {
+        self.id = id
+        self.fullText = fullText
+        self.timestamp = timestamp
+        self.sourceAppBundleId = sourceAppBundleId
+        self.isPinned = isPinned
+    }
 
     var previewText: String {
         ClipboardItem.makePreview(from: fullText)

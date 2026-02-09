@@ -10,6 +10,18 @@ struct ClipboardPopupView: View {
         store.filteredItems(query: viewModel.searchText)
     }
 
+    private var pinnedItems: [ClipboardItem] {
+        filteredItems.filter { $0.isPinned }
+    }
+    
+    private var recentItems: [ClipboardItem] {
+        filteredItems.filter { !$0.isPinned }
+    }
+
+    private var combinedItems: [ClipboardItem] {
+        pinnedItems + recentItems
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             HStack(spacing: 0) {
@@ -45,15 +57,34 @@ struct ClipboardPopupView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollViewReader { proxy in
-                    List(filteredItems, selection: $viewModel.selectedId) { item in
-                        ClipboardRowView(item: item)
-                            .tag(item.id)
-                            .id(item.id) // Needed for ScrollViewReader
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                viewModel.selectedId = item.id
-                                select(item)
+                    List(selection: $viewModel.selectedId) {
+                        if !pinnedItems.isEmpty {
+                            Section("Pinned") {
+                                ForEach(pinnedItems) { item in
+                                    ClipboardRowView(item: item)
+                                        .tag(item.id)
+                                        .id(item.id)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            viewModel.selectedId = item.id
+                                            select(item)
+                                        }
+                                }
                             }
+                        }
+                        
+                        Section("Recent") {
+                            ForEach(recentItems) { item in
+                                ClipboardRowView(item: item)
+                                    .tag(item.id)
+                                    .id(item.id)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        viewModel.selectedId = item.id
+                                        select(item)
+                                    }
+                            }
+                        }
                     }
                     .listStyle(.inset)
                     .onChange(of: viewModel.selectedId) { _, newId in
@@ -131,9 +162,15 @@ struct ClipboardPopupView: View {
 
                 Spacer()
 
-                Text("⌘W to close")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Text("⌘P to pin")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                    
+                    Text("⌘W to close")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
             }
 
             if viewModel.showSettings {
@@ -169,13 +206,19 @@ struct ClipboardPopupView: View {
                 .keyboardShortcut(.defaultAction)
             Button("Close", action: onClose)
                 .keyboardShortcut("w", modifiers: .command)
+            Button("Toggle Pin") {
+                if let id = viewModel.selectedId {
+                    store.togglePin(id: id)
+                }
+            }
+            .keyboardShortcut("p", modifiers: .command)
         }
         .frame(width: 0, height: 0)
         .opacity(0)
     }
 
     private func handleMove(_ direction: MoveCommandDirection) {
-        let items = filteredItems
+        let items = combinedItems
         guard !items.isEmpty else { return }
 
         let currentIndex = items.firstIndex { $0.id == viewModel.selectedId }

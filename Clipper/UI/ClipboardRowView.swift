@@ -24,6 +24,12 @@ struct ClipboardRowView: View {
                 .lineLimit(2)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
+            
+            if item.isPinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.accentColor)
+            }
         }
         .padding(.vertical, 4)
     }

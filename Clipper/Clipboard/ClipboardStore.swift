@@ -30,22 +30,51 @@ final class ClipboardStore {
         let normalized = normalize(text)
         guard !normalized.isEmpty else { return }
 
+        // Don't remove if the existing item is pinned, just keep it
         if let existingIndex = items.firstIndex(where: { normalize($0.fullText) == normalized }) {
+            if items[existingIndex].isPinned {
+                // If pinned, just update its timestamp to bring it to the top of history? 
+                // No, let's keep pins stable and just not add a duplicate to history.
+                return 
+            }
             items.remove(at: existingIndex)
         }
 
         let sourceAppId = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date(), sourceAppBundleId: sourceAppId)
+        let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date(), sourceAppBundleId: sourceAppId, isPinned: false)
         items.insert(item, at: 0)
 
         pruneToLimit()
         saveDebounced(snapshot: items)
     }
 
+    func togglePin(id: UUID) {
+        if let index = items.firstIndex(where: { $0.id == id }) {
+            items[index].isPinned.toggle()
+            saveDebounced(snapshot: items)
+        }
+    }
+
     private func pruneToLimit() {
         let limit = AppSettings.shared.historyLimit
-        if items.count > limit {
-            items = Array(items.prefix(limit))
+        
+        // Count regular items (not pinned)
+        let pinnedCount = items.filter { $0.isPinned }.count
+        let totalAllowed = limit + pinnedCount
+        
+        if items.count > totalAllowed {
+            // We need to remove the oldest non-pinned items
+            var nonPinnedIndices = items.enumerated()
+                .filter { !$0.element.isPinned }
+                .map { $0.offset }
+            
+            if nonPinnedIndices.count > limit {
+                let toRemove = nonPinnedIndices.suffix(nonPinnedIndices.count - limit)
+                // Remove from highest index to lowest to avoid shifting
+                for index in toRemove.sorted(by: >) {
+                    items.remove(at: index)
+                }
+            }
         }
     }
 
