@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ClipboardRowView: View {
     let item: ClipboardItem
+    private static let iconCache = NSCache<NSString, NSImage>()
 
     var body: some View {
         HStack(spacing: 10) {
@@ -35,8 +36,14 @@ struct ClipboardRowView: View {
     }
 
     private func appIcon(for bundleId: String) -> NSImage? {
+        if let cached = Self.iconCache.object(forKey: bundleId as NSString) {
+            return cached
+        }
+
         if let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId)?.path {
-            return NSWorkspace.shared.icon(forFile: path)
+            let icon = NSWorkspace.shared.icon(forFile: path)
+            Self.iconCache.setObject(icon, forKey: bundleId as NSString)
+            return icon
         }
         return nil
     }

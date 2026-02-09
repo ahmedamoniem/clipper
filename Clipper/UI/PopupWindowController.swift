@@ -55,7 +55,8 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
 
     func show() {
         guard let window = window else { return }
-        viewModel.resetForShow(defaultSelectionId: store.items.first?.id)
+        let defaultSelectionId = store.items.first(where: { !$0.isPinned })?.id ?? store.items.first?.id
+        viewModel.resetForShow(defaultSelectionId: defaultSelectionId)
         previousApp = NSWorkspace.shared.frontmostApplication
         position(window: window)
         NSApp.activate(ignoringOtherApps: true)

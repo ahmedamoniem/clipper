@@ -16,12 +16,17 @@ final class ClipboardStore {
         self.saveDelay = saveDelay
         loadFromDisk()
         
-        // Watch for limit changes and prune immediately
+        observeHistoryLimit()
+    }
+
+    private func observeHistoryLimit() {
         _ = withObservationTracking {
             AppSettings.shared.historyLimit
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.pruneToLimit()
+                // Re-establish tracking for subsequent changes
+                self?.observeHistoryLimit()
             }
         }
     }
@@ -51,6 +56,10 @@ final class ClipboardStore {
     func togglePin(id: UUID) {
         if let index = items.firstIndex(where: { $0.id == id }) {
             items[index].isPinned.toggle()
+            // Prune if we just unpinned something while over the limit
+            if !items[index].isPinned {
+                pruneToLimit()
+            }
             saveDebounced(snapshot: items)
         }
     }
@@ -101,7 +110,9 @@ final class ClipboardStore {
         do {
             let data = try Data(contentsOf: url)
             let decoded = try JSONDecoder().decode([ClipboardItem].self, from: data)
-            items = Array(decoded.prefix(AppSettings.shared.historyLimit))
+            // Load everything, then let pruneToLimit handle the logic correctly
+            items = decoded
+            pruneToLimit()
         } catch {
             Logging.debug("Failed to load history: \(error)")
         }

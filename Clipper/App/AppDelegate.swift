@@ -4,7 +4,6 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
-    private var autoPasteItem: NSMenuItem?
     private let store = ClipboardStore()
     private lazy var watcher = ClipboardWatcher(store: store)
     private lazy var popupController = PopupWindowController(store: store)

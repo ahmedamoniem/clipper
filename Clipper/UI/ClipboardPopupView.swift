@@ -95,10 +95,11 @@ struct ClipboardPopupView: View {
                         }
                     }
                     .onChange(of: viewModel.searchText) { _, _ in
-                        // Auto-select first item when filtering
-                        viewModel.selectedId = filteredItems.first?.id
+                        // Auto-select newest recent item when filtering, falling back to pinned
+                        let defaultId = recentItems.first?.id ?? pinnedItems.first?.id
+                        viewModel.selectedId = defaultId
                         // Jump to top when search changes
-                        if let firstId = filteredItems.first?.id {
+                        if let firstId = defaultId {
                             proxy.scrollTo(firstId, anchor: .top)
                         }
                     }
