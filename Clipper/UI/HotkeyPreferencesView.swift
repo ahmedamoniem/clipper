@@ -10,8 +10,6 @@ struct HotkeyPreferencesView: View {
         case hotkey = "Hotkey"
         case storage = "Storage"
         case about = "About"
-        case hotkey = "Hotkey"
-        case general = "General"
         
         var id: String { rawValue }
         
@@ -21,8 +19,6 @@ struct HotkeyPreferencesView: View {
             case .hotkey: return "keyboard"
             case .storage: return "internaldrive"
             case .about: return "info.circle"
-            case .hotkey: return "keyboard"
-            case .general: return "gearshape"
             }
         }
     }
@@ -49,8 +45,6 @@ struct HotkeyPreferencesView: View {
                     StorageTab()
                 case .about:
                     AboutTab()
-                case .general:
-                    GeneralTab()
                 }
             }
         }
@@ -129,18 +123,16 @@ struct GeneralTab: View {
             } header: {
                 Text("Clipboard Behavior")
             } footer: {
-                if autoPasteEnabled {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.orange)
-                        Button("Open Accessibility Settings") {
-                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                    if autoPasteEnabled {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
+                                .foregroundStyle(.orange)
+                            Button("Open Accessibility Settings") {
+                                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                            }
+                            .controlSize(.small)
                         }
-                        .controlSize(.small)
-                    }
-                    Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
-                        .foregroundStyle(.orange)
-                } else {
+                    } else {
                     Text("Automatically paste the selected item when pressing Enter")
                 }
             }
