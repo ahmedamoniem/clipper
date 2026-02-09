@@ -58,7 +58,11 @@ final class HotkeyManager {
     }
 
     func registerCurrentSettings() {
-        register(keyCode: AppSettings.hotkeyKeyCode, modifierFlags: AppSettings.hotkeyModifierFlags)
+        if #available(macOS 14.0, *) {
+            register(keyCode: AppSettings.hotkeyKeyCode, modifierFlags: AppSettings.hotkeyModifierFlags)
+        } else {
+            // Fallback on earlier versions
+        }
     }
 
     func unregister() {

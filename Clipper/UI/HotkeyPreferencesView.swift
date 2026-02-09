@@ -103,7 +103,11 @@ struct HotkeyPreferencesView: View {
             Group {
                 switch selectedTab {
                 case .hotkey:
-                    HotkeyTab()
+                    if #available(macOS 14.0, *) {
+                        HotkeyTab()
+                    } else {
+                        // Fallback on earlier versions
+                    }
                 case .general:
                     GeneralTab()
                 }
@@ -113,6 +117,7 @@ struct HotkeyPreferencesView: View {
     }
 }
 
+@available(macOS 14.0, *)
 struct HotkeyTab: View {
     @State private var keyCode: Int = AppSettings.hotkeyKeyCode
     @State private var modifierFlags: Int = AppSettings.hotkeyModifierFlags

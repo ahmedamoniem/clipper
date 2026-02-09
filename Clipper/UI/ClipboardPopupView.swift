@@ -1,5 +1,6 @@
 import SwiftUI
 
+@available(macOS 14.0, *)
 struct ClipboardPopupView: View {
     var store: ClipboardStore
     @Bindable var viewModel: PopupViewModel
@@ -259,3 +260,4 @@ struct ClipboardPopupView: View {
         onSelect(item)
     }
 }
+

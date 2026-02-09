@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@available(macOS 14.0, *)
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?

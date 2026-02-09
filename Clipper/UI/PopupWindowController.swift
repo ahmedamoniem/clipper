@@ -1,6 +1,7 @@
     import AppKit
 import SwiftUI
 
+@available(macOS 14.0, *)
 @MainActor
 final class PopupWindowController: NSWindowController, NSWindowDelegate {
     private let store: ClipboardStore
@@ -109,6 +110,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
     }
 }
 
+@available(macOS 14.0, *)
 @Observable
 @MainActor
 final class PopupViewModel {

@@ -3,6 +3,7 @@ import Carbon
 import SwiftUI
 import Observation
 
+@available(macOS 14.0, *)
 @Observable
 final class AppSettings {
     static let shared = AppSettings()
