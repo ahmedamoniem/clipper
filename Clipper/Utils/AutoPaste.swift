@@ -17,7 +17,7 @@ enum AutoPaste {
         guard let app else { return }
         guard isTrusted else { return }
 
-        app.activate()
+        app.activate(options: [])
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
             sendCmdV()
         }

@@ -6,6 +6,7 @@ final class ClipboardStoreTests: XCTestCase {
     func testCappedToMaxItems() {
         withTempURL { url in
             let store = ClipboardStore(storageURL: url, saveDelay: 0)
+            AppSettings.shared.historyLimit = 10
 
             for i in 1...12 {
                 store.add(text: "Item \(i)")

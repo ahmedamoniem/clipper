@@ -112,7 +112,7 @@ struct ClipboardPopupView: View {
                 }
             }
 
-            if viewModel.showSettings || !AutoPaste.isTrusted {
+            if viewModel.showSettings || !viewModel.isTrusted {
                 Divider()
                 footerView
                     .padding(.horizontal, 12)
@@ -120,7 +120,7 @@ struct ClipboardPopupView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .frame(width: 360, height: viewModel.showSettings ? 480 : ((!AutoPaste.isTrusted) ? 440 : 400))
+        .frame(width: 360, height: (viewModel.showSettings || !viewModel.isTrusted) ? 480 : 400)
         .background(Color(NSColor.windowBackgroundColor))
         .onMoveCommand { direction in
             handleMove(direction)
@@ -129,8 +129,8 @@ struct ClipboardPopupView: View {
             onClose()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            // Self-healing: check permissions SILENTLY when user returns to app
-            _ = AutoPaste.isTrusted
+            // Self-healing: refresh trust status reactively when user returns to app
+            viewModel.refreshTrustStatus()
         }
         .background(hiddenActions)
     }
@@ -138,7 +138,7 @@ struct ClipboardPopupView: View {
     private var footerView: some View {
         VStack(spacing: 10) {
             HStack {
-                if !AutoPaste.isTrusted {
+                if !viewModel.isTrusted {
                     Button {
                         NSApp.sendAction(#selector(AppDelegate.showAccessibilityGuide), to: nil, from: nil)
                     } label: {

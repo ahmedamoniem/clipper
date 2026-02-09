@@ -99,7 +99,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
         if previousApp.bundleIdentifier == Bundle.main.bundleIdentifier {
             return
         }
-        previousApp.activate()
+        previousApp.activate(options: [])
     }
 
     private static func copyToPasteboard(_ text: String) {
@@ -116,11 +116,16 @@ final class PopupViewModel {
     var selectedId: ClipboardItem.ID?
     var focusToken: UUID = UUID()
     var showSettings: Bool = false
+    var isTrusted: Bool = AutoPaste.isTrusted
 
     func resetForShow(defaultSelectionId: ClipboardItem.ID?) {
         searchText = ""
         selectedId = defaultSelectionId
         focusToken = UUID()
-        // We don't reset showSettings here to keep the user's last preference during the session
+        refreshTrustStatus()
+    }
+
+    func refreshTrustStatus() {
+        isTrusted = AutoPaste.isTrusted
     }
 }
