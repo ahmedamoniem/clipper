@@ -9,7 +9,7 @@ final class HotkeyManager {
     func register() {
         unregister()
         let signature = fourCharCode("CLIP")
-        var hotKeyID = EventHotKeyID(signature: signature, id: 1)
+        let hotKeyID = EventHotKeyID(signature: signature, id: 1)
 
         let status = RegisterEventHotKey(
             UInt32(kVK_ANSI_V),
