@@ -382,6 +382,8 @@
 				MARKETING_VERSION = 1.0;
 				SWIFT_VERSION = 5.9;
 			};
+			name = Release;
+		};
 		4E0A2956FDB9426091907691 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -425,17 +427,6 @@
 			};
 			name = Debug;
 		};
-			E9729FB147E844FA85F60E2D /* Debug */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					CODE_SIGN_IDENTITY = "-";
-					CURRENT_PROJECT_VERSION = 1;
-					MACOSX_DEPLOYMENT_TARGET = 14.0;
-					MARKETING_VERSION = 1.0;
-					SWIFT_VERSION = 5.9;
-				};
-				name = Debug;
-			};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
