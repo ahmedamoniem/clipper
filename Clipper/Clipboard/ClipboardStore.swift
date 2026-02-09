@@ -1,6 +1,7 @@
 import SwiftUI
 import Observation
 
+@available(macOS 14.0, *)
 @Observable
 @MainActor
 final class ClipboardStore {

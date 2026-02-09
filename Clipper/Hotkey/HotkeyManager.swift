@@ -6,14 +6,21 @@ final class HotkeyManager {
 
     var onHotKey: (() -> Void)?
 
-    func register() {
+    private var currentKeyCode: Int = 9 // default kVK_ANSI_V
+    private var currentModifierFlags: Int = Int(controlKey) // default 4096
+
+    func register(keyCode: Int, modifierFlags: Int) {
         unregister()
+
+        currentKeyCode = keyCode
+        currentModifierFlags = modifierFlags
+
         let signature = fourCharCode("CLIP")
         let hotKeyID = EventHotKeyID(signature: signature, id: 1)
 
         let status = RegisterEventHotKey(
-            UInt32(kVK_ANSI_V),
-            UInt32(controlKey),
+            UInt32(keyCode),
+            UInt32(modifierFlags),
             hotKeyID,
             GetApplicationEventTarget(),
             0,
@@ -47,6 +54,15 @@ final class HotkeyManager {
             hotKeyRef = nil
             handlerRef = nil
             return
+        }
+    }
+
+    func registerCurrentSettings() {
+        if #available(macOS 14.0, *) {
+            register(keyCode: AppSettings.hotkeyKeyCode, modifierFlags: AppSettings.hotkeyModifierFlags)
+        } else {
+            // Fallback on earlier versions: use the current stored key and modifier flags
+            register(keyCode: currentKeyCode, modifierFlags: currentModifierFlags)
         }
     }
 

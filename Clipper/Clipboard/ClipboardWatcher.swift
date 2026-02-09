@@ -1,5 +1,6 @@
 import AppKit
 
+@available(macOS 14.0, *)
 @MainActor
 final class ClipboardWatcher {
     private let store: ClipboardStore
