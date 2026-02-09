@@ -61,7 +61,8 @@ final class HotkeyManager {
         if #available(macOS 14.0, *) {
             register(keyCode: AppSettings.hotkeyKeyCode, modifierFlags: AppSettings.hotkeyModifierFlags)
         } else {
-            // Fallback on earlier versions
+            // Fallback on earlier versions: use the current stored key and modifier flags
+            register(keyCode: currentKeyCode, modifierFlags: currentModifierFlags)
         }
     }
 
