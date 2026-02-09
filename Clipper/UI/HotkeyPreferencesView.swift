@@ -8,6 +8,7 @@ struct HotkeyPreferencesView: View {
     enum PreferenceTab: String, CaseIterable, Identifiable {
         case general = "General"
         case hotkey = "Hotkey"
+        case storage = "Storage"
         case about = "About"
         
         var id: String { rawValue }
@@ -16,6 +17,7 @@ struct HotkeyPreferencesView: View {
             switch self {
             case .general: return "gearshape"
             case .hotkey: return "keyboard"
+            case .storage: return "internaldrive"
             case .about: return "info.circle"
             }
         }
@@ -39,6 +41,8 @@ struct HotkeyPreferencesView: View {
                     } else {
                         // Fallback on earlier versions
                     }
+                case .storage:
+                    StorageTab()
                 case .about:
                     AboutTab()
                 }
@@ -136,6 +140,78 @@ struct GeneralTab: View {
         .formStyle(.grouped)
         .navigationTitle("General")
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
+struct StorageTab: View {
+    @State private var fileSize: String = "Calculating..."
+    @State private var showingAlert = false
+    
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("File Size:") {
+                    Text(fileSize)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Button("Clear History") {
+                    showingAlert = true
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+            } header: {
+                Text("Clipboard History")
+            } footer: {
+                Text("History is stored at ~/Library/Application Support/Clipper/clipboard_history.json")
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle("Storage")
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            updateFileSize()
+        }
+        .alert("Clear History?", isPresented: $showingAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Clear", role: .destructive) {
+                clearHistory()
+            }
+        } message: {
+            Text("This will permanently delete all clipboard history. This action cannot be undone.")
+        }
+    }
+    
+    private func updateFileSize() {
+        let fileManager = FileManager.default
+        guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            fileSize = "Unknown"
+            return
+        }
+        let url = base.appendingPathComponent("Clipper", isDirectory: true)
+            .appendingPathComponent("clipboard_history.json")
+        
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
+            if let size = attributes[.size] as? Int64 {
+                fileSize = ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
+            } else {
+                fileSize = "Unknown"
+            }
+        } catch {
+            fileSize = "0 bytes"
+        }
+    }
+    
+    private func clearHistory() {
+        let fileManager = FileManager.default
+        guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
+        let url = base.appendingPathComponent("Clipper", isDirectory: true)
+            .appendingPathComponent("clipboard_history.json")
+        
+        try? fileManager.removeItem(at: url)
+        NotificationCenter.default.post(name: Notification.Name("ClearClipboardHistory"), object: nil)
+        updateFileSize()
     }
 }
 

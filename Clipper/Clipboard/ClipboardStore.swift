@@ -18,6 +18,7 @@ final class ClipboardStore {
         loadFromDisk()
         
         observeHistoryLimit()
+        observeClearHistory()
     }
 
     private func observeHistoryLimit() {
@@ -29,6 +30,12 @@ final class ClipboardStore {
                 // Re-establish tracking for subsequent changes
                 self?.observeHistoryLimit()
             }
+        }
+    }
+    
+    private func observeClearHistory() {
+        NotificationCenter.default.addObserver(forName: Notification.Name("ClearClipboardHistory"), object: nil, queue: .main) { [weak self] _ in
+            self?.items.removeAll()
         }
     }
 
