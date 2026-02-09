@@ -297,7 +297,8 @@
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "-";
 				CURRENT_PROJECT_VERSION = 1;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+                                ALWAYS_SEARCH_USER_PATHS = NO;
 				MARKETING_VERSION = 1.0;
 				SWIFT_VERSION = 5.7;
 			};
@@ -308,7 +309,8 @@
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "-";
 				CURRENT_PROJECT_VERSION = 1;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+                                ALWAYS_SEARCH_USER_PATHS = NO;
 				MARKETING_VERSION = 1.0;
 				SWIFT_VERSION = 5.7;
 			};
@@ -348,7 +350,8 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				INFOPLIST_FILE = ClipperTests/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+                                ALWAYS_SEARCH_USER_PATHS = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.clipper.tests;
 				PRODUCT_NAME = ClipperTests;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -363,7 +366,8 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				INFOPLIST_FILE = ClipperTests/Info.plist;
-				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+                                ALWAYS_SEARCH_USER_PATHS = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.clipper.tests;
 				PRODUCT_NAME = ClipperTests;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";

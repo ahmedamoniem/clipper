@@ -35,7 +35,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
             Self.copyToPasteboard(item.fullText)
             guard let self else { return }
             let targetApp = previousApp
-            if AppSettings.autoPasteEnabled {
+            if AutoPaste.isTrusted {
                 closePopup(restoreFocus: false)
                 AutoPaste.paste(into: targetApp)
             } else {
@@ -55,7 +55,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
 
     func show() {
         guard let window = window else { return }
-        viewModel.resetForShow()
+        viewModel.resetForShow(defaultSelectionId: store.items.first?.id)
         previousApp = NSWorkspace.shared.frontmostApplication
         position(window: window)
         NSApp.activate(ignoringOtherApps: true)
@@ -98,7 +98,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
         if previousApp.bundleIdentifier == Bundle.main.bundleIdentifier {
             return
         }
-        previousApp.activate(options: [.activateIgnoringOtherApps])
+        previousApp.activate()
     }
 
     private static func copyToPasteboard(_ text: String) {
@@ -114,10 +114,12 @@ final class PopupViewModel {
     var searchText: String = ""
     var selectedId: ClipboardItem.ID?
     var focusToken: UUID = UUID()
+    var showSettings: Bool = false
 
-    func resetForShow() {
+    func resetForShow(defaultSelectionId: ClipboardItem.ID?) {
         searchText = ""
-        selectedId = nil
+        selectedId = defaultSelectionId
         focusToken = UUID()
+        // We don't reset showSettings here to keep the user's last preference during the session
     }
 }

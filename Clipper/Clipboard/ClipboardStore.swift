@@ -6,7 +6,6 @@ import Observation
 final class ClipboardStore {
     private(set) var items: [ClipboardItem] = []
 
-    private let maxItems = 10
     private let storageURLOverride: URL?
     private let saveDelay: TimeInterval
     private let saveQueue = DispatchQueue(label: "Clipper.ClipboardStore.Save", qos: .utility)
@@ -16,6 +15,15 @@ final class ClipboardStore {
         self.storageURLOverride = storageURL
         self.saveDelay = saveDelay
         loadFromDisk()
+        
+        // Watch for limit changes and prune immediately
+        _ = withObservationTracking {
+            AppSettings.shared.historyLimit
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.pruneToLimit()
+            }
+        }
     }
 
     func add(text: String) {
@@ -29,11 +37,15 @@ final class ClipboardStore {
         let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date())
         items.insert(item, at: 0)
 
-        if items.count > maxItems {
-            items = Array(items.prefix(maxItems))
-        }
-
+        pruneToLimit()
         saveDebounced(snapshot: items)
+    }
+
+    private func pruneToLimit() {
+        let limit = AppSettings.shared.historyLimit
+        if items.count > limit {
+            items = Array(items.prefix(limit))
+        }
     }
 
     func filteredItems(query: String) -> [ClipboardItem] {
@@ -59,7 +71,7 @@ final class ClipboardStore {
         do {
             let data = try Data(contentsOf: url)
             let decoded = try JSONDecoder().decode([ClipboardItem].self, from: data)
-            items = Array(decoded.prefix(maxItems))
+            items = Array(decoded.prefix(AppSettings.shared.historyLimit))
         } catch {
             Logging.debug("Failed to load history: \(error)")
         }

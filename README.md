@@ -3,8 +3,8 @@
 A minimal macOS menu bar clipboard history app (text only). It runs in the background, tracks the last 10 text clipboard entries, and shows a searchable popup on Control+V.
 
 **Requirements**
-- macOS 13+ (Ventura)
-- Xcode 14+ (Swift 5.7+)
+- macOS 14+ (Sonoma)
+- Xcode 15+ (Swift 5.9+)
 
 **How to Run**
 1. Open `Clipper.xcodeproj` in Xcode.

@@ -12,13 +12,28 @@ struct ClipboardPopupView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            SearchFieldView(
-                text: $viewModel.searchText,
-                focusToken: viewModel.focusToken,
-                onMove: handleMove,
-                onEnter: selectCurrent,
-                onEscape: onClose
-            )
+            HStack(spacing: 0) {
+                SearchFieldView(
+                    text: $viewModel.searchText,
+                    focusToken: viewModel.focusToken,
+                    onMove: handleMove,
+                    onEnter: selectCurrent,
+                    onEscape: onClose
+                )
+                
+                Button {
+                    withAnimation(.spring(duration: 0.3)) {
+                        viewModel.showSettings.toggle()
+                    }
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 14))
+                        .foregroundStyle(viewModel.showSettings ? Color.accentColor : .secondary)
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 8)
+                .help("Settings")
+            }
             .padding(.horizontal, 12)
             .padding(.top, 12)
 
@@ -29,23 +44,44 @@ struct ClipboardPopupView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(selection: $viewModel.selectedId) {
-                    ForEach(filteredItems) { item in
-                        Button {
-                            viewModel.selectedId = item.id
-                            select(item)
-                        } label: {
-                            ClipboardRowView(item: item)
-                                .contentShape(Rectangle())
+                ScrollViewReader { proxy in
+                    List(filteredItems, selection: $viewModel.selectedId) { item in
+                        ClipboardRowView(item: item)
+                            .tag(item.id)
+                            .id(item.id) // Needed for ScrollViewReader
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                viewModel.selectedId = item.id
+                                select(item)
+                            }
+                    }
+                    .listStyle(.inset)
+                    .onChange(of: viewModel.searchText) { _, _ in
+                        // Auto-select first item when filtering
+                        viewModel.selectedId = filteredItems.first?.id
+                        // Jump to top when search changes
+                        if let firstId = filteredItems.first?.id {
+                            proxy.scrollTo(firstId, anchor: .top)
                         }
-                        .buttonStyle(.plain)
-                        .tag(item.id)
+                    }
+                    .onAppear {
+                        // Fresh Start: Ensure we scroll to the 'Spotlight' selection when shown
+                        if let selectedId = viewModel.selectedId {
+                            proxy.scrollTo(selectedId, anchor: .top)
+                        }
                     }
                 }
-                .listStyle(.inset)
+            }
+
+            if viewModel.showSettings || !AutoPaste.isTrusted {
+                Divider()
+                footerView
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .frame(width: 360, height: 420)
+        .frame(width: 360, height: viewModel.showSettings ? 480 : ((!AutoPaste.isTrusted) ? 440 : 400))
         .background(Color(NSColor.windowBackgroundColor))
         .onMoveCommand { direction in
             handleMove(direction)
@@ -53,7 +89,71 @@ struct ClipboardPopupView: View {
         .onExitCommand {
             onClose()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            // Self-healing: check permissions SILENTLY when user returns to app
+            _ = AutoPaste.isTrusted
+        }
         .background(hiddenActions)
+    }
+
+    private var footerView: some View {
+        VStack(spacing: 10) {
+            HStack {
+                if !AutoPaste.isTrusted {
+                    Button {
+                        NSApp.sendAction(#selector(AppDelegate.showAccessibilityGuide), to: nil, from: nil)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "hand.tap.fill")
+                            Text("Enable Auto-Paste on Enter")
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Image(systemName: "questionmark.circle")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .help("Requires Accessibility permission to paste into other apps.")
+                } else {
+                    Text("Auto-Paste is active")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Text("⌘W to close")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+
+            if viewModel.showSettings {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("History Size:")
+                            .font(.system(size: 11, weight: .medium))
+                        Spacer()
+                        Text("\(AppSettings.shared.historyLimit) clips")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    
+                    Slider(value: sliderBinding, in: 10...1000, step: 10)
+                        .controlSize(.small)
+                }
+                .padding(.top, 4)
+                .transition(.opacity)
+            }
+        }
+    }
+
+    private var sliderBinding: Binding<Double> {
+        Binding(
+            get: { Double(AppSettings.shared.historyLimit) },
+            set: { AppSettings.shared.historyLimit = Int($0) }
+        )
     }
 
     private var hiddenActions: some View {
