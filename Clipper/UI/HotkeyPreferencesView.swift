@@ -10,6 +10,8 @@ struct HotkeyPreferencesView: View {
         case hotkey = "Hotkey"
         case storage = "Storage"
         case about = "About"
+        case hotkey = "Hotkey"
+        case general = "General"
         
         var id: String { rawValue }
         
@@ -19,6 +21,8 @@ struct HotkeyPreferencesView: View {
             case .hotkey: return "keyboard"
             case .storage: return "internaldrive"
             case .about: return "info.circle"
+            case .hotkey: return "keyboard"
+            case .general: return "gearshape"
             }
         }
     }
@@ -45,6 +49,8 @@ struct HotkeyPreferencesView: View {
                     StorageTab()
                 case .about:
                     AboutTab()
+                case .general:
+                    GeneralTab()
                 }
             }
         }
@@ -132,6 +138,8 @@ struct GeneralTab: View {
                         }
                         .controlSize(.small)
                     }
+                    Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.orange)
                 } else {
                     Text("Automatically paste the selected item when pressing Enter")
                 }

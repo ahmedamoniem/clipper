@@ -291,6 +291,25 @@
 				F86662812580466591FF8664 /* ClipboardWatcher.swift in Sources */,
 				6E19AC45792B4E0289687820 /* ClipboardItem.swift in Sources */,
 				C19C207EEA8040BD988D5E10 /* ClipboardStore.swift in Sources */,
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6EF0DF62C06042F984DDB9DE /* ClipboardStoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+			CAA9BBC563484FECA6377627 /* Sources */ = {
+				isa = PBXSourcesBuildPhase;
+				buildActionMask = 2147483647;
+				files = (
+					CF9D010E0470429AAD6015E3 /* ClipboardHistoryApp.swift in Sources */,
+					FBEDF13C0D71413C978C7E4C /* AppDelegate.swift in Sources */,
+					814D8F7C2F39C60100F5A0F8 /* HotkeyPreferencesView.swift in Sources */,
+					814D8F7D2F39C60100F5A0F8 /* HotkeyCaptureView.swift in Sources */,
+					7B3C8A2E4E5F6789A1B2C3D5 /* HotkeyFormatter.swift in Sources */,
+					F86662812580466591FF8664 /* ClipboardWatcher.swift in Sources */,
+					6E19AC45792B4E0289687820 /* ClipboardItem.swift in Sources */,
+					C19C207EEA8040BD988D5E10 /* ClipboardStore.swift in Sources */,
 				9D00B21B30DC4682B8E97699 /* PopupWindowController.swift in Sources */,
 				8EDE5E4AC0004146976D57BE /* ClipboardPopupView.swift in Sources */,
 				4777C4A8FB064F84AC9F84BC /* ClipboardRowView.swift in Sources */,
@@ -363,8 +382,6 @@
 				MARKETING_VERSION = 1.0;
 				SWIFT_VERSION = 5.9;
 			};
-			name = Release;
-		};
 		4E0A2956FDB9426091907691 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -408,6 +425,17 @@
 			};
 			name = Debug;
 		};
+			E9729FB147E844FA85F60E2D /* Debug */ = {
+				isa = XCBuildConfiguration;
+				buildSettings = {
+					CODE_SIGN_IDENTITY = "-";
+					CURRENT_PROJECT_VERSION = 1;
+					MACOSX_DEPLOYMENT_TARGET = 14.0;
+					MARKETING_VERSION = 1.0;
+					SWIFT_VERSION = 5.9;
+				};
+				name = Debug;
+			};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
