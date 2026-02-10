@@ -133,6 +133,16 @@ struct GeneralTab: View {
                         .controlSize(.small)
                     }
                 } else {
+                    if autoPasteEnabled {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
+                                .foregroundStyle(.orange)
+                            Button("Open Accessibility Settings") {
+                                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                            }
+                            .controlSize(.small)
+                        }
+                    } else {
                     Text("Automatically paste the selected item when pressing Enter")
                 }
             }
