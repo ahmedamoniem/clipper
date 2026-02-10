@@ -3,7 +3,7 @@ import Carbon
 
 
 struct HotkeyPreferencesView: View {
-    @State private var selectedTab: PreferenceTab = .hotkey
+    @State private var selectedTab: PreferenceTab = .general
     
     enum PreferenceTab: String, CaseIterable, Identifiable {
         case general = "General"
@@ -146,6 +146,8 @@ struct GeneralTab: View {
 struct StorageTab: View {
     @State private var fileSize: String = "Calculating..."
     @State private var showingAlert = false
+    @State private var autoCleanEnabled = AppSettings.shared.autoCleanEnabled
+    @State private var autoCleanDays = AppSettings.shared.autoCleanDays
     
     var body: some View {
         Form {
@@ -164,6 +166,28 @@ struct StorageTab: View {
                 Text("Clipboard History")
             } footer: {
                 Text("History is stored at ~/Library/Application Support/Clipper/clipboard_history.json")
+            }
+            
+            Section {
+                Toggle("Auto-clean old clips", isOn: $autoCleanEnabled)
+                    .onChange(of: autoCleanEnabled) { _, newValue in
+                        AppSettings.shared.autoCleanEnabled = newValue
+                    }
+                
+                if autoCleanEnabled {
+                    HStack {
+                        Text("Delete clips older than")
+                        Stepper("\(autoCleanDays)", value: $autoCleanDays, in: 1...365)
+                            .onChange(of: autoCleanDays) { _, newValue in
+                                AppSettings.shared.autoCleanDays = newValue
+                            }
+                        Text(autoCleanDays == 1 ? "day" : "days")
+                    }
+                }
+            } header: {
+                Text("Auto-Clean")
+            } footer: {
+                Text("Automatically remove clipboard items older than the specified number of days (pinned items are never deleted)")
             }
         }
         .formStyle(.grouped)
