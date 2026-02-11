@@ -169,19 +169,26 @@ struct StorageTab: View {
             }
             
             Section {
-                Toggle("Auto-clean old clips", isOn: $autoCleanEnabled)
-                    .onChange(of: autoCleanEnabled) { _, newValue in
-                        AppSettings.shared.autoCleanEnabled = newValue
-                    }
+                Toggle(
+                    "Auto-clean old clips",
+                    isOn: Binding(
+                        get: { AppSettings.shared.autoCleanEnabled },
+                        set: { AppSettings.shared.autoCleanEnabled = $0 }
+                    )
+                )
                 
-                if autoCleanEnabled {
+                if AppSettings.shared.autoCleanEnabled {
                     HStack {
                         Text("Delete clips older than")
-                        Stepper("\(autoCleanDays)", value: $autoCleanDays, in: 1...365)
-                            .onChange(of: autoCleanDays) { _, newValue in
-                                AppSettings.shared.autoCleanDays = newValue
-                            }
-                        Text(autoCleanDays == 1 ? "day" : "days")
+                        Stepper(
+                            "\(AppSettings.shared.autoCleanDays)",
+                            value: Binding(
+                                get: { AppSettings.shared.autoCleanDays },
+                                set: { AppSettings.shared.autoCleanDays = $0 }
+                            ),
+                            in: 1...365
+                        )
+                        Text(AppSettings.shared.autoCleanDays == 1 ? "day" : "days")
                     }
                 }
             } header: {
