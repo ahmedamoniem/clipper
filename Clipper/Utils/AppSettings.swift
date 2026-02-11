@@ -40,11 +40,14 @@ final class AppSettings {
         get {
             access(keyPath: \.autoCleanDays)
             let days = UserDefaults.standard.integer(forKey: autoCleanDaysKey)
-            return days == 0 ? 10 : days
+            let effectiveDays = (days == 0 ? 10 : days)
+            let clampedDays = max(1, min(effectiveDays, 365))
+            return clampedDays
         }
         set {
             withMutation(keyPath: \.autoCleanDays) {
-                UserDefaults.standard.set(newValue, forKey: autoCleanDaysKey)
+                let clampedDays = max(1, min(newValue, 365))
+                UserDefaults.standard.set(clampedDays, forKey: autoCleanDaysKey)
             }
         }
     }
