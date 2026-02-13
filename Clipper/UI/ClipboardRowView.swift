@@ -2,11 +2,26 @@ import SwiftUI
 
 struct ClipboardRowView: View {
     let item: ClipboardItem
+    let store: ClipboardStore?
     private static let iconCache = NSCache<NSString, NSImage>()
+    @State private var thumbnailImage: NSImage?
 
     var body: some View {
         HStack(spacing: 10) {
-            if let bundleId = item.sourceAppBundleId,
+            if item.isImage {
+                if let thumbnailImage {
+                    Image(nsImage: thumbnailImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 40, height: 40)
+                        .cornerRadius(4)
+                } else {
+                    Image(systemName: "photo")
+                        .font(.system(size: 20))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 40, height: 40)
+                }
+            } else if let bundleId = item.sourceAppBundleId,
                let icon = appIcon(for: bundleId) {
                 Image(nsImage: icon)
                     .resizable()
@@ -33,6 +48,14 @@ struct ClipboardRowView: View {
             }
         }
         .padding(.vertical, 4)
+        .task {
+            if item.isImage, thumbnailImage == nil, let store = store {
+                if let imageData = store.imageData(for: item),
+                   let thumbnail = ImageProcessor.generateThumbnail(from: imageData, maxSize: 40) {
+                    thumbnailImage = NSImage(data: thumbnail)
+                }
+            }
+        }
     }
 
     private func appIcon(for bundleId: String) -> NSImage? {

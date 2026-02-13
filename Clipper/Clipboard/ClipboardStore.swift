@@ -37,8 +37,18 @@ final class ClipboardStore {
     
     private func observeClearHistory() {
         NotificationCenter.default.addObserver(forName: Notification.Name("ClearClipboardHistory"), object: nil, queue: .main) { [weak self] _ in
-            self?.items.removeAll()
+            self?.clearAllItems()
         }
+    }
+    
+    private func clearAllItems() {
+        // Delete all image files
+        for item in items {
+            if item.isImage, let fileName = item.imageFileName {
+                deleteImageFile(fileName: fileName)
+            }
+        }
+        items.removeAll()
     }
     
     private func observeAutoClean() {
@@ -60,6 +70,17 @@ final class ClipboardStore {
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
         
         let originalCount = items.count
+        let itemsToRemove = items.filter { item in
+            !item.isPinned && item.timestamp < cutoffDate
+        }
+        
+        // Delete image files for removed items
+        for item in itemsToRemove {
+            if item.isImage, let fileName = item.imageFileName {
+                deleteImageFile(fileName: fileName)
+            }
+        }
+        
         items.removeAll { item in
             !item.isPinned && item.timestamp < cutoffDate
         }
@@ -74,10 +95,8 @@ final class ClipboardStore {
         guard !normalized.isEmpty else { return }
 
         // Don't remove if the existing item is pinned, just keep it
-        if let existingIndex = items.firstIndex(where: { normalize($0.fullText) == normalized }) {
+        if let existingIndex = items.firstIndex(where: { $0.contentType == .text && normalize($0.fullText ?? "") == normalized }) {
             if items[existingIndex].isPinned {
-                // If pinned, just update its timestamp to bring it to the top of history? 
-                // No, let's keep pins stable and just not add a duplicate to history.
                 return 
             }
             items.remove(at: existingIndex)
@@ -87,6 +106,49 @@ final class ClipboardStore {
         let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date(), sourceAppBundleId: sourceAppId, isPinned: false)
         items.insert(item, at: 0)
 
+        pruneToLimit()
+        saveDebounced(snapshot: items)
+    }
+    
+    func add(imageData: Data) {
+        let maxBytes = Int64(AppSettings.shared.maxImageSizeMB) * 1024 * 1024
+        guard imageData.count <= maxBytes else {
+            Logging.debug("Image too large: \(imageData.count) bytes")
+            return
+        }
+        
+        // Check for duplicate image by comparing data hash
+        let imageHash = imageData.hashValue
+        if let existingIndex = items.firstIndex(where: { item in
+            if item.isImage, let fileName = item.imageFileName,
+               let existingData = loadImageFile(fileName: fileName) {
+                return existingData.hashValue == imageHash
+            }
+            return false
+        }) {
+            if items[existingIndex].isPinned {
+                return
+            }
+            // Remove duplicate and its file
+            if let fileName = items[existingIndex].imageFileName {
+                deleteImageFile(fileName: fileName)
+            }
+            items.remove(at: existingIndex)
+        }
+        
+        let id = UUID()
+        let fileName = "\(id.uuidString).png"
+        
+        guard saveImageFile(data: imageData, fileName: fileName) else {
+            Logging.debug("Failed to save image file")
+            return
+        }
+        
+        let dimensions = ImageProcessor.imageDimensions(from: imageData)
+        let sourceAppId = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        let item = ClipboardItem(id: id, imageFileName: fileName, imageDimensions: dimensions, timestamp: Date(), sourceAppBundleId: sourceAppId, isPinned: false)
+        items.insert(item, at: 0)
+        
         pruneToLimit()
         saveDebounced(snapshot: items)
     }
@@ -117,6 +179,13 @@ final class ClipboardStore {
             
             if nonPinnedIndices.count > limit {
                 let toRemove = nonPinnedIndices.suffix(nonPinnedIndices.count - limit)
+                // Delete image files before removing items
+                for index in toRemove {
+                    let item = items[index]
+                    if item.isImage, let fileName = item.imageFileName {
+                        deleteImageFile(fileName: fileName)
+                    }
+                }
                 // Remove from highest index to lowest to avoid shifting
                 for index in toRemove.sorted(by: >) {
                     items.remove(at: index)
@@ -128,7 +197,17 @@ final class ClipboardStore {
     func filteredItems(query: String) -> [ClipboardItem] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return items }
-        return items.filter { $0.fullText.localizedCaseInsensitiveContains(trimmed) }
+        return items.filter { 
+            if $0.contentType == .text {
+                return $0.fullText?.localizedCaseInsensitiveContains(trimmed) ?? false
+            }
+            return false
+        }
+    }
+    
+    func imageData(for item: ClipboardItem) -> Data? {
+        guard item.isImage, let fileName = item.imageFileName else { return nil }
+        return loadImageFile(fileName: fileName)
     }
 
     private func storageURL() -> URL? {
@@ -141,6 +220,36 @@ final class ClipboardStore {
         }
         return base.appendingPathComponent("Clipper", isDirectory: true)
             .appendingPathComponent("clipboard_history.json")
+    }
+    
+    private func imagesDirectoryURL() -> URL? {
+        guard let storageURL = storageURL() else { return nil }
+        return storageURL.deletingLastPathComponent().appendingPathComponent("clipboard_images", isDirectory: true)
+    }
+    
+    private func saveImageFile(data: Data, fileName: String) -> Bool {
+        guard let imagesDir = imagesDirectoryURL() else { return false }
+        do {
+            try FileManager.default.createDirectory(at: imagesDir, withIntermediateDirectories: true)
+            let fileURL = imagesDir.appendingPathComponent(fileName)
+            try data.write(to: fileURL, options: [.atomic])
+            return true
+        } catch {
+            Logging.debug("Failed to save image: \(error)")
+            return false
+        }
+    }
+    
+    private func loadImageFile(fileName: String) -> Data? {
+        guard let imagesDir = imagesDirectoryURL() else { return nil }
+        let fileURL = imagesDir.appendingPathComponent(fileName)
+        return try? Data(contentsOf: fileURL)
+    }
+    
+    private func deleteImageFile(fileName: String) {
+        guard let imagesDir = imagesDirectoryURL() else { return }
+        let fileURL = imagesDir.appendingPathComponent(fileName)
+        try? FileManager.default.removeItem(at: fileURL)
     }
 
     private func loadFromDisk() {

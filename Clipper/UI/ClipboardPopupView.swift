@@ -62,7 +62,7 @@ struct ClipboardPopupView: View {
                         if !pinnedItems.isEmpty {
                             Section("Pinned") {
                                 ForEach(pinnedItems) { item in
-                                    ClipboardRowView(item: item)
+                                    ClipboardRowView(item: item, store: store)
                                         .tag(item.id)
                                         .id(item.id)
                                         .contentShape(Rectangle())
@@ -76,7 +76,7 @@ struct ClipboardPopupView: View {
                         
                         Section("Recent") {
                             ForEach(recentItems) { item in
-                                ClipboardRowView(item: item)
+                                ClipboardRowView(item: item, store: store)
                                     .tag(item.id)
                                     .id(item.id)
                                     .contentShape(Rectangle())
@@ -257,6 +257,15 @@ struct ClipboardPopupView: View {
     }
 
     private func select(_ item: ClipboardItem) {
+        if item.isImage {
+            if let imageData = store.imageData(for: item) {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                if let image = NSImage(data: imageData) {
+                    pasteboard.writeObjects([image])
+                }
+            }
+        }
         onSelect(item)
     }
 }

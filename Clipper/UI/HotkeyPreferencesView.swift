@@ -145,6 +145,8 @@ struct GeneralTab: View {
 
 struct StorageTab: View {
     @State private var fileSize: String = "Calculating..."
+    @State private var imageCount: Int = 0
+    @State private var textCount: Int = 0
     @State private var showingAlert = false
     @State private var autoCleanEnabled = AppSettings.shared.autoCleanEnabled
     @State private var autoCleanDays = AppSettings.shared.autoCleanDays
@@ -152,9 +154,27 @@ struct StorageTab: View {
     var body: some View {
         Form {
             Section {
-                LabeledContent("File Size:") {
+                LabeledContent("Total Size:") {
                     Text(fileSize)
                         .foregroundStyle(.secondary)
+                }
+                
+                LabeledContent("Items:") {
+                    Text("\(textCount) text, \(imageCount) images")
+                        .foregroundStyle(.secondary)
+                }
+                
+                LabeledContent("Max Image Size:") {
+                    HStack {
+                        Stepper(
+                            "\(AppSettings.shared.maxImageSizeMB) MB",
+                            value: Binding(
+                                get: { AppSettings.shared.maxImageSizeMB },
+                                set: { AppSettings.shared.maxImageSizeMB = $0 }
+                            ),
+                            in: 1...50
+                        )
+                    }
                 }
                 
                 Button("Clear History") {
@@ -165,7 +185,7 @@ struct StorageTab: View {
             } header: {
                 Text("Clipboard History")
             } footer: {
-                Text("History is stored at ~/Library/Application Support/Clipper/clipboard_history.json")
+                Text("History stored at ~/Library/Application Support/Clipper/")
             }
             
             Section {
@@ -219,28 +239,47 @@ struct StorageTab: View {
             fileSize = "Unknown"
             return
         }
-        let url = base.appendingPathComponent("Clipper", isDirectory: true)
-            .appendingPathComponent("clipboard_history.json")
+        let clipperDir = base.appendingPathComponent("Clipper", isDirectory: true)
+        let jsonURL = clipperDir.appendingPathComponent("clipboard_history.json")
+        let imagesDir = clipperDir.appendingPathComponent("clipboard_images", isDirectory: true)
         
-        do {
-            let attributes = try fileManager.attributesOfItem(atPath: url.path)
-            if let size = attributes[.size] as? Int64 {
-                fileSize = ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
-            } else {
-                fileSize = "Unknown"
+        var totalSize: Int64 = 0
+        
+        // JSON file size
+        if let attrs = try? fileManager.attributesOfItem(atPath: jsonURL.path),
+           let size = attrs[.size] as? Int64 {
+            totalSize += size
+        }
+        
+        // Images directory size
+        if let enumerator = fileManager.enumerator(at: imagesDir, includingPropertiesForKeys: [.fileSizeKey]) {
+            for case let fileURL as URL in enumerator {
+                if let attrs = try? fileManager.attributesOfItem(atPath: fileURL.path),
+                   let size = attrs[.size] as? Int64 {
+                    totalSize += size
+                }
             }
-        } catch {
-            fileSize = "0 bytes"
+        }
+        
+        fileSize = ByteCountFormatter.string(fromByteCount: totalSize, countStyle: .file)
+        
+        // Count items
+        if let data = try? Data(contentsOf: jsonURL),
+           let items = try? JSONDecoder().decode([ClipboardItem].self, from: data) {
+            textCount = items.filter { $0.contentType == .text }.count
+            imageCount = items.filter { $0.contentType == .image }.count
         }
     }
     
     private func clearHistory() {
         let fileManager = FileManager.default
         guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
-        let url = base.appendingPathComponent("Clipper", isDirectory: true)
-            .appendingPathComponent("clipboard_history.json")
+        let clipperDir = base.appendingPathComponent("Clipper", isDirectory: true)
+        let jsonURL = clipperDir.appendingPathComponent("clipboard_history.json")
+        let imagesDir = clipperDir.appendingPathComponent("clipboard_images", isDirectory: true)
         
-        try? fileManager.removeItem(at: url)
+        try? fileManager.removeItem(at: jsonURL)
+        try? fileManager.removeItem(at: imagesDir)
         NotificationCenter.default.post(name: Notification.Name("ClearClipboardHistory"), object: nil)
         updateFileSize()
     }

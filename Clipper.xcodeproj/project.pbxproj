@@ -20,6 +20,8 @@
 		814D8F7C2F39C60100F5A0F8 /* HotkeyPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 814D8F7B2F39C60100F5A0F8 /* HotkeyPreferencesView.swift */; };
 		814D8F7D2F39C60100F5A0F8 /* HotkeyCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 814D8F7A2F39C60100F5A0F8 /* HotkeyCaptureView.swift */; };
 		814D8F7F2F39C64100F5A0F8 /* NotificationNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = 814D8F7E2F39C64100F5A0F8 /* NotificationNames.swift */; };
+		8183C13E2F3F127B00343E22 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8183C13D2F3F127B00343E22 /* ImageProcessor.swift */; };
+		8183C13F2F3F127B00343E22 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8183C13D2F3F127B00343E22 /* ImageProcessor.swift */; };
 		8EDE5E4AC0004146976D57BE /* ClipboardPopupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCDFDCF112D7473F954176CE /* ClipboardPopupView.swift */; };
 		9D00B21B30DC4682B8E97699 /* PopupWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8EE1155D76541EEBB0376B3 /* PopupWindowController.swift */; };
 		C19C207EEA8040BD988D5E10 /* ClipboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACEFC4C609E45BD8A80200C /* ClipboardStore.swift */; };
@@ -55,6 +57,7 @@
 		814D8F7A2F39C60100F5A0F8 /* HotkeyCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyCaptureView.swift; sourceTree = "<group>"; };
 		814D8F7B2F39C60100F5A0F8 /* HotkeyPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyPreferencesView.swift; sourceTree = "<group>"; };
 		814D8F7E2F39C64100F5A0F8 /* NotificationNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationNames.swift; sourceTree = "<group>"; };
+		8183C13D2F3F127B00343E22 /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
 		830CD38CA2064B87A91701EB /* ClipboardWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardWatcher.swift; sourceTree = "<group>"; };
 		8710474D390A4B1AB4DE33B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8760A15EF3D841829B533387 /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
@@ -149,6 +152,7 @@
 		73499CE2554C451DA488C8E9 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				8183C13D2F3F127B00343E22 /* ImageProcessor.swift */,
 				814D8F7E2F39C64100F5A0F8 /* NotificationNames.swift */,
 				9A4CB0C592D743BE92737B8B /* AppSettings.swift */,
 				C481D187721542EF8E6F3778 /* AutoPaste.swift */,
@@ -275,6 +279,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8183C13E2F3F127B00343E22 /* ImageProcessor.swift in Sources */,
 				6EF0DF62C06042F984DDB9DE /* ClipboardStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -293,6 +298,7 @@
 				C19C207EEA8040BD988D5E10 /* ClipboardStore.swift in Sources */,
 				9D00B21B30DC4682B8E97699 /* PopupWindowController.swift in Sources */,
 				8EDE5E4AC0004146976D57BE /* ClipboardPopupView.swift in Sources */,
+				8183C13F2F3F127B00343E22 /* ImageProcessor.swift in Sources */,
 				4777C4A8FB064F84AC9F84BC /* ClipboardRowView.swift in Sources */,
 				00C76C3EC8A348F98B9DDAA3 /* SearchFieldView.swift in Sources */,
 				16B6D367E80A4A2082FD13F3 /* AppSettings.swift in Sources */,
@@ -318,7 +324,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 2G8J757232;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -338,7 +344,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 2G8J757232;
 				ENABLE_HARDENED_RUNTIME = YES;

@@ -10,6 +10,7 @@ final class AppSettings {
     private let historyLimitKey = "HistoryLimit"
     private let autoCleanEnabledKey = "AutoCleanEnabled"
     private let autoCleanDaysKey = "AutoCleanDays"
+    private let maxImageSizeMBKey = "MaxImageSizeMB"
 
     var historyLimit: Int {
         get {
@@ -20,6 +21,19 @@ final class AppSettings {
         set {
             withMutation(keyPath: \.historyLimit) {
                 UserDefaults.standard.set(newValue, forKey: historyLimitKey)
+            }
+        }
+    }
+    
+    var maxImageSizeMB: Int {
+        get {
+            access(keyPath: \.maxImageSizeMB)
+            let size = UserDefaults.standard.integer(forKey: maxImageSizeMBKey)
+            return size == 0 ? 10 : size
+        }
+        set {
+            withMutation(keyPath: \.maxImageSizeMB) {
+                UserDefaults.standard.set(newValue, forKey: maxImageSizeMBKey)
             }
         }
     }
