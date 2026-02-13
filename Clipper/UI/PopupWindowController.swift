@@ -120,6 +120,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
 final class PopupViewModel {
     var searchText: String = ""
     var selectedId: ClipboardItem.ID?
+    var hoveredId: ClipboardItem.ID?
     var focusToken: UUID = UUID()
     var showSettings: Bool = false
     var isTrusted: Bool = AutoPaste.isTrusted
@@ -127,6 +128,7 @@ final class PopupViewModel {
     func resetForShow(defaultSelectionId: ClipboardItem.ID?) {
         searchText = ""
         selectedId = defaultSelectionId
+        hoveredId = nil
         focusToken = UUID()
         refreshTrustStatus()
     }

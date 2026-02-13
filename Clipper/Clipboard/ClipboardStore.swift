@@ -163,6 +163,17 @@ final class ClipboardStore {
             saveDebounced(snapshot: items)
         }
     }
+    
+    func delete(id: UUID) {
+        if let index = items.firstIndex(where: { $0.id == id }) {
+            let item = items[index]
+            if item.isImage, let fileName = item.imageFileName {
+                deleteImageFile(fileName: fileName)
+            }
+            items.remove(at: index)
+            saveDebounced(snapshot: items)
+        }
+    }
 
     private func pruneToLimit() {
         let limit = AppSettings.shared.historyLimit

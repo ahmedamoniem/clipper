@@ -62,28 +62,78 @@ struct ClipboardPopupView: View {
                         if !pinnedItems.isEmpty {
                             Section("Pinned") {
                                 ForEach(pinnedItems) { item in
-                                    ClipboardRowView(item: item, store: store)
-                                        .tag(item.id)
-                                        .id(item.id)
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            viewModel.selectedId = item.id
-                                            select(item)
+                                    HStack(spacing: 0) {
+                                        ClipboardRowView(item: item, store: store)
+                                            .contentShape(Rectangle())
+                                            .onTapGesture {
+                                                viewModel.selectedId = item.id
+                                                select(item)
+                                            }
+                                        
+                                        if viewModel.hoveredId == item.id {
+                                            Button {
+                                                store.delete(id: item.id)
+                                            } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundStyle(.secondary)
+                                                    .font(.system(size: 14))
+                                            }
+                                            .buttonStyle(.plain)
+                                            .padding(.trailing, 8)
+                                            .transition(.opacity)
                                         }
+                                    }
+                                    .tag(item.id)
+                                    .id(item.id)
+                                    .onHover { hovering in
+                                        viewModel.hoveredId = hovering ? item.id : nil
+                                    }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                        Button(role: .destructive) {
+                                            store.delete(id: item.id)
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
                                 }
                             }
                         }
                         
                         Section("Recent") {
                             ForEach(recentItems) { item in
-                                ClipboardRowView(item: item, store: store)
-                                    .tag(item.id)
-                                    .id(item.id)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        viewModel.selectedId = item.id
-                                        select(item)
+                                HStack(spacing: 0) {
+                                    ClipboardRowView(item: item, store: store)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            viewModel.selectedId = item.id
+                                            select(item)
+                                        }
+                                    
+                                    if viewModel.hoveredId == item.id {
+                                        Button {
+                                            store.delete(id: item.id)
+                                        } label: {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundStyle(.secondary)
+                                                .font(.system(size: 14))
+                                        }
+                                        .buttonStyle(.plain)
+                                        .padding(.trailing, 8)
+                                        .transition(.opacity)
                                     }
+                                }
+                                .tag(item.id)
+                                .id(item.id)
+                                .onHover { hovering in
+                                    viewModel.hoveredId = hovering ? item.id : nil
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        store.delete(id: item.id)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
                     }
@@ -169,6 +219,10 @@ struct ClipboardPopupView: View {
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                     
+                    Text("⌫ to delete")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                    
                     Text("⌘W to close")
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
@@ -214,6 +268,12 @@ struct ClipboardPopupView: View {
                 }
             }
             .keyboardShortcut("p", modifiers: .command)
+            Button("Delete") {
+                if let id = viewModel.selectedId {
+                    store.delete(id: id)
+                }
+            }
+            .keyboardShortcut(.delete, modifiers: [])
         }
         .frame(width: 0, height: 0)
         .opacity(0)
