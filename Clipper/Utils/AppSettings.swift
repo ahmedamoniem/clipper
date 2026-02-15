@@ -29,11 +29,14 @@ final class AppSettings {
         get {
             access(keyPath: \.maxImageSizeMB)
             let size = UserDefaults.standard.integer(forKey: maxImageSizeMBKey)
-            return size == 0 ? 10 : size
+            let effectiveSize = (size == 0 ? 10 : size)
+            let clampedSize = max(1, min(effectiveSize, 50))
+            return clampedSize
         }
         set {
             withMutation(keyPath: \.maxImageSizeMB) {
-                UserDefaults.standard.set(newValue, forKey: maxImageSizeMBKey)
+                let clampedSize = max(1, min(newValue, 50))
+                UserDefaults.standard.set(clampedSize, forKey: maxImageSizeMBKey)
             }
         }
     }
