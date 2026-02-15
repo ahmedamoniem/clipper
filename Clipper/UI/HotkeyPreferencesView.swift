@@ -216,6 +216,35 @@ struct StorageTab: View {
             } footer: {
                 Text("Automatically remove clipboard items older than the specified number of days (pinned items are never deleted)")
             }
+            
+            Section {
+                Toggle(
+                    "Auto-clean old clips",
+                    isOn: Binding(
+                        get: { AppSettings.shared.autoCleanEnabled },
+                        set: { AppSettings.shared.autoCleanEnabled = $0 }
+                    )
+                )
+                
+                if AppSettings.shared.autoCleanEnabled {
+                    HStack {
+                        Text("Delete clips older than")
+                        Stepper(
+                            "\(AppSettings.shared.autoCleanDays)",
+                            value: Binding(
+                                get: { AppSettings.shared.autoCleanDays },
+                                set: { AppSettings.shared.autoCleanDays = $0 }
+                            ),
+                            in: 1...365
+                        )
+                        Text(AppSettings.shared.autoCleanDays == 1 ? "day" : "days")
+                    }
+                }
+            } header: {
+                Text("Auto-Clean")
+            } footer: {
+                Text("Automatically remove clipboard items older than the specified number of days (pinned items are never deleted)")
+            }
         }
         .formStyle(.grouped)
         .navigationTitle("Storage")
