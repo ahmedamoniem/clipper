@@ -1,8 +1,8 @@
 import XCTest
 @testable import Clipper
 
-@MainActor
 final class ClipboardStoreTests: XCTestCase {
+    @MainActor
     func testCappedToMaxItems() {
         withTempURL { url in
             let store = ClipboardStore(storageURL: url, saveDelay: 0)
@@ -18,6 +18,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testNormalizationDeDuplication() {
         withTempURL { url in
             let store = ClipboardStore(storageURL: url, saveDelay: 0)
@@ -30,6 +31,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testSaveThenLoadRestoresItems() {
         withTempURL { url in
             var store: ClipboardStore? = ClipboardStore(storageURL: url, saveDelay: 0)
@@ -44,6 +46,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testCorruptedJSONFailsGracefully() {
         withTempURL { url in
             try? "not-json".data(using: .utf8)?.write(to: url, options: [.atomic])
@@ -53,6 +56,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testFilteredItemsEmptyQueryReturnsAll() {
         withTempURL { url in
             let store = ClipboardStore(storageURL: url, saveDelay: 0)
@@ -64,6 +68,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testFilteredItemsIsCaseInsensitive() {
         withTempURL { url in
             let store = ClipboardStore(storageURL: url, saveDelay: 0)
@@ -74,6 +79,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testFilteredItemsTrimsWhitespace() {
         withTempURL { url in
             let store = ClipboardStore(storageURL: url, saveDelay: 0)
@@ -84,6 +90,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testFilteredItemsMatchesFullTextBeyondPreview() {
         withTempURL { url in
             let store = ClipboardStore(storageURL: url, saveDelay: 0)
@@ -95,6 +102,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testPinnedItemsExemptFromPruning() {
         withTempURL { url in
             let store = ClipboardStore(storageURL: url, saveDelay: 0)
@@ -115,6 +123,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testUnpinningTriggersPrune() {
         withTempURL { url in
             let store = ClipboardStore(storageURL: url, saveDelay: 0)
@@ -127,7 +136,7 @@ final class ClipboardStoreTests: XCTestCase {
             let pinId = store.items.first!.id
             store.togglePin(id: pinId)
             
-            XCTAssertEqual(store.items.count, 3) // 2 recent + 1 pinned
+            XCTAssertEqual(store.items.count, 2) // newest is pinned; oldest was already pruned
             
             store.togglePin(id: pinId) // Unpin
             
@@ -135,6 +144,7 @@ final class ClipboardStoreTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testDecodingOldSchemaSafe() {
         withTempURL { url in
             // JSON missing isPinned and sourceAppBundleId

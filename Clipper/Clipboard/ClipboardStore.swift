@@ -311,13 +311,18 @@ final class ClipboardStore {
     private func saveDebounced(snapshot: [ClipboardItem]) {
         saveWorkItem?.cancel()
 
+        if saveDelay <= 0 {
+            saveToDisk(snapshot: snapshot)
+            return
+        }
+
         let workItem = DispatchWorkItem { [weak self] in
             guard let self else { return }
             self.saveToDisk(snapshot: snapshot)
         }
 
         saveWorkItem = workItem
-        let deadline = saveDelay <= 0 ? DispatchTime.now() : .now() + saveDelay
+        let deadline: DispatchTime = .now() + saveDelay
         saveQueue.asyncAfter(deadline: deadline, execute: workItem)
     }
 
