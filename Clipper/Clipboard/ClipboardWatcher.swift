@@ -34,19 +34,7 @@ final class ClipboardWatcher {
         guard changeCount != lastChangeCount else { return }
         lastChangeCount = changeCount
 
-        // Check for images first (higher priority)
-        let imageTypes: [NSPasteboard.PasteboardType] = [.png, .tiff]
-        for type in imageTypes {
-            if let imageData = pasteboard.data(forType: type) {
-                store.add(imageData: imageData)
-                return
-            }
-        }
-        
-        // Check for text if no image found
-        if let text = pasteboard.string(forType: .string) {
-            store.add(text: text)
-            return
-        }
+        guard let text = pasteboard.string(forType: .string) else { return }
+        store.add(text: text)
     }
 }
