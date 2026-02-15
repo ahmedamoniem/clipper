@@ -14,3 +14,5 @@ actor ClipboardStore {
 func resetClipboard(store: ClipboardStore) async {
     await store.clearAllItems()
 }
+
+//example usage
