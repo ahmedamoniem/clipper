@@ -50,9 +50,20 @@ struct ClipboardRowView: View {
         .padding(.vertical, 4)
         .task {
             if item.isImage, thumbnailImage == nil, let store = store {
-                if let imageData = store.imageData(for: item),
-                   let thumbnail = ImageProcessor.generateThumbnail(from: imageData, maxSize: 40) {
-                    thumbnailImage = NSImage(data: thumbnail)
+                // Perform disk I/O and thumbnail generation off the main actor
+                let item = self.item
+                let thumbnailData: Data? = await Task.detached(priority: .background) {
+                    guard let imageData = store.imageData(for: item),
+                          let thumbnail = ImageProcessor.generateThumbnail(from: imageData, maxSize: 40) else {
+                        return nil
+                    }
+                    return thumbnail
+                }.value
+
+                if let thumbnailData {
+                    await MainActor.run {
+                        thumbnailImage = NSImage(data: thumbnailData)
+                    }
                 }
             }
         }
