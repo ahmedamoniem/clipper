@@ -334,17 +334,18 @@
 			};
 			name = Release;
 		};
-		1C661568531E480D9FE021F6 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 2G8J757232;
-				ENABLE_HARDENED_RUNTIME = YES;
-				INFOPLIST_FILE = Clipper/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Clipper;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+			1C661568531E480D9FE021F6 /* Debug */ = {
+				isa = XCBuildConfiguration;
+				buildSettings = {
+					ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+					"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+					CODE_SIGN_STYLE = Automatic;
+					DEVELOPMENT_TEAM = 2G8J757232;
+					ENABLE_TESTABILITY = YES;
+					ENABLE_HARDENED_RUNTIME = YES;
+					INFOPLIST_FILE = Clipper/Info.plist;
+					INFOPLIST_KEY_CFBundleDisplayName = Clipper;
+					INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.ahmedamoniem.clipper;

@@ -12,7 +12,7 @@ jobs:
   build-and-test:
     runs-on: macos-latest
     env:
-      XCODEBUILD_COMMON_ARGS: -project Clipper.xcodeproj -scheme Clipper -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+      XCODEBUILD_COMMON_ARGS: -project Clipper.xcodeproj -scheme Clipper -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES
       XCODE_TEST_DESTINATION: platform=macOS
 
     steps:
@@ -25,7 +25,8 @@ jobs:
 
       - name: Run unit tests
         run: |
+          set -o pipefail
           xcodebuild \
             $XCODEBUILD_COMMON_ARGS \
             -destination "$XCODE_TEST_DESTINATION" \
-            test
+            test | tee build/xcodebuild-test.log
