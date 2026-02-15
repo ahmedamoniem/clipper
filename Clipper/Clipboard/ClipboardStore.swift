@@ -19,6 +19,8 @@ final class ClipboardStore {
         
         observeHistoryLimit()
         observeClearHistory()
+        observeAutoClean()
+        cleanOldItems()
     }
 
     private func observeHistoryLimit() {
@@ -36,6 +38,34 @@ final class ClipboardStore {
     private func observeClearHistory() {
         NotificationCenter.default.addObserver(forName: Notification.Name("ClearClipboardHistory"), object: nil, queue: .main) { [weak self] _ in
             self?.items.removeAll()
+        }
+    }
+    
+    private func observeAutoClean() {
+        _ = withObservationTracking {
+            AppSettings.shared.autoCleanEnabled
+            AppSettings.shared.autoCleanDays
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.cleanOldItems()
+                self?.observeAutoClean()
+            }
+        }
+    }
+    
+    private func cleanOldItems() {
+        guard AppSettings.shared.autoCleanEnabled else { return }
+        
+        let days = AppSettings.shared.autoCleanDays
+        let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+        
+        let originalCount = items.count
+        items.removeAll { item in
+            !item.isPinned && item.timestamp < cutoffDate
+        }
+        
+        if items.count < originalCount {
+            saveDebounced(snapshot: items)
         }
     }
 

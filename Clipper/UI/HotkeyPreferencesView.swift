@@ -3,7 +3,7 @@ import Carbon
 
 
 struct HotkeyPreferencesView: View {
-    @State private var selectedTab: PreferenceTab = .hotkey
+    @State private var selectedTab: PreferenceTab = .general
     
     enum PreferenceTab: String, CaseIterable, Identifiable {
         case general = "General"
@@ -123,16 +123,16 @@ struct GeneralTab: View {
             } header: {
                 Text("Clipboard Behavior")
             } footer: {
-                    if autoPasteEnabled {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
-                                .foregroundStyle(.orange)
-                            Button("Open Accessibility Settings") {
-                                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
-                            }
-                            .controlSize(.small)
+                if autoPasteEnabled {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.orange)
+                        Button("Open Accessibility Settings") {
+                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
                         }
-                    } else {
+                        .controlSize(.small)
+                    }
+                } else {
                     Text("Automatically paste the selected item when pressing Enter")
                 }
             }
@@ -146,6 +146,8 @@ struct GeneralTab: View {
 struct StorageTab: View {
     @State private var fileSize: String = "Calculating..."
     @State private var showingAlert = false
+    @State private var autoCleanEnabled = AppSettings.shared.autoCleanEnabled
+    @State private var autoCleanDays = AppSettings.shared.autoCleanDays
     
     var body: some View {
         Form {
@@ -164,6 +166,35 @@ struct StorageTab: View {
                 Text("Clipboard History")
             } footer: {
                 Text("History is stored at ~/Library/Application Support/Clipper/clipboard_history.json")
+            }
+            
+            Section {
+                Toggle(
+                    "Auto-clean old clips",
+                    isOn: Binding(
+                        get: { AppSettings.shared.autoCleanEnabled },
+                        set: { AppSettings.shared.autoCleanEnabled = $0 }
+                    )
+                )
+                
+                if AppSettings.shared.autoCleanEnabled {
+                    HStack {
+                        Text("Delete clips older than")
+                        Stepper(
+                            "\(AppSettings.shared.autoCleanDays)",
+                            value: Binding(
+                                get: { AppSettings.shared.autoCleanDays },
+                                set: { AppSettings.shared.autoCleanDays = $0 }
+                            ),
+                            in: 1...365
+                        )
+                        Text(AppSettings.shared.autoCleanDays == 1 ? "day" : "days")
+                    }
+                }
+            } header: {
+                Text("Auto-Clean")
+            } footer: {
+                Text("Automatically remove clipboard items older than the specified number of days (pinned items are never deleted)")
             }
         }
         .formStyle(.grouped)

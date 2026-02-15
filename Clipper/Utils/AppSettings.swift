@@ -8,6 +8,8 @@ import Observation
 final class AppSettings {
     static let shared = AppSettings()
     private let historyLimitKey = "HistoryLimit"
+    private let autoCleanEnabledKey = "AutoCleanEnabled"
+    private let autoCleanDaysKey = "AutoCleanDays"
 
     var historyLimit: Int {
         get {
@@ -18,6 +20,34 @@ final class AppSettings {
         set {
             withMutation(keyPath: \.historyLimit) {
                 UserDefaults.standard.set(newValue, forKey: historyLimitKey)
+            }
+        }
+    }
+    
+    var autoCleanEnabled: Bool {
+        get {
+            access(keyPath: \.autoCleanEnabled)
+            return UserDefaults.standard.bool(forKey: autoCleanEnabledKey)
+        }
+        set {
+            withMutation(keyPath: \.autoCleanEnabled) {
+                UserDefaults.standard.set(newValue, forKey: autoCleanEnabledKey)
+            }
+        }
+    }
+    
+    var autoCleanDays: Int {
+        get {
+            access(keyPath: \.autoCleanDays)
+            let days = UserDefaults.standard.integer(forKey: autoCleanDaysKey)
+            let effectiveDays = (days == 0 ? 10 : days)
+            let clampedDays = max(1, min(effectiveDays, 365))
+            return clampedDays
+        }
+        set {
+            withMutation(keyPath: \.autoCleanDays) {
+                let clampedDays = max(1, min(newValue, 365))
+                UserDefaults.standard.set(clampedDays, forKey: autoCleanDaysKey)
             }
         }
     }
