@@ -95,7 +95,7 @@
 				9A65C7E2A36A4DE6BA36E48A /* ClipboardStoreTests.swift */,
 				BE5CC66650C6443E8299FD5C /* Info.plist */,
 			);
-			path = ClipperTests;
+			path = ../ClipperTests;
 			sourceTree = "<group>";
 		};
 		234A34D99CC64BFDB40FB430 /* Hotkey */ = {
