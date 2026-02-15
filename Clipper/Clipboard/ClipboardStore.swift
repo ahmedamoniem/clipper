@@ -51,44 +51,44 @@ final class ClipboardStore {
         items.removeAll()
     }
     
-    private func observeAutoClean() {
-        _ = withObservationTracking {
-            AppSettings.shared.autoCleanEnabled
-            AppSettings.shared.autoCleanDays
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.cleanOldItems()
-                self?.observeAutoClean()
-            }
-        }
-    }
     
-    private func cleanOldItems() {
-        guard AppSettings.shared.autoCleanEnabled else { return }
-        
-        let days = AppSettings.shared.autoCleanDays
-        let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
-        
-        let originalCount = items.count
-        let itemsToRemove = items.filter { item in
-            !item.isPinned && item.timestamp < cutoffDate
-        }
-        
-        // Delete image files for removed items
-        for item in itemsToRemove {
-            if item.isImage, let fileName = item.imageFileName {
-                deleteImageFile(fileName: fileName)
-            }
-        }
-        
-        items.removeAll { item in
-            !item.isPinned && item.timestamp < cutoffDate
-        }
-        
-        if items.count < originalCount {
-            saveDebounced(snapshot: items)
-        }
-    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     private func observeAutoClean() {
         _ = withObservationTracking {
