@@ -28,4 +28,4 @@ jobs:
           xcodebuild \
             $XCODEBUILD_COMMON_ARGS \
             -destination "$XCODE_TEST_DESTINATION" \
-            test-without-building
+            test
