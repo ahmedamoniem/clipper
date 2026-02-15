@@ -148,8 +148,6 @@ struct StorageTab: View {
     @State private var imageCount: Int = 0
     @State private var textCount: Int = 0
     @State private var showingAlert = false
-    @State private var autoCleanEnabled = AppSettings.shared.autoCleanEnabled
-    @State private var autoCleanDays = AppSettings.shared.autoCleanDays
     
     var body: some View {
         Form {
