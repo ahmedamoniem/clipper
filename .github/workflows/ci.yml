@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    env:
+      XCODEBUILD_COMMON_ARGS: -project Clipper.xcodeproj -scheme Clipper -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+      XCODE_TEST_DESTINATION: platform=macOS
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build (Debug, unsigned)
+        run: |
+          xcodebuild $XCODEBUILD_COMMON_ARGS build
+
+      - name: Run unit tests
+        run: |
+          xcodebuild \
+            $XCODEBUILD_COMMON_ARGS \
+            -destination "$XCODE_TEST_DESTINATION" \
+            test
