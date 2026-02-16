@@ -1,0 +1,102 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+
+jobs:
+  update-tap:
+    runs-on: ubuntu-latest
+    env:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      HOMEBREW_TAP_REPO: ${{ vars.HOMEBREW_TAP_REPO }}
+
+    steps:
+      - name: Check configuration
+        id: config
+        shell: bash
+        run: |
+          if [[ -z "${HOMEBREW_TAP_TOKEN}" ]]; then
+            echo "HOMEBREW_TAP_TOKEN is not set. Skipping Homebrew tap update."
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          echo "enabled=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Resolve tap and release metadata
+        if: steps.config.outputs.enabled == 'true'
+        id: meta
+        shell: bash
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          if [[ "${TAG}" == "${VERSION}" ]]; then
+            echo "Expected release tag to start with 'v' (found: ${TAG})"
+            exit 1
+          fi
+
+          TAP_REPO="${HOMEBREW_TAP_REPO}"
+          if [[ -z "${TAP_REPO}" ]]; then
+            TAP_REPO="${GITHUB_REPOSITORY_OWNER}/homebrew-tap"
+          fi
+
+          ZIP_NAME="Clipper-${TAG}-macOS.zip"
+          CHECKSUMS_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/checksums.txt"
+          ZIP_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${ZIP_NAME}"
+
+          curl -fsSL "${CHECKSUMS_URL}" -o checksums.txt
+          SHA256="$(awk "/ ${ZIP_NAME}\$/ {print \$1}" checksums.txt)"
+          if [[ -z "${SHA256}" ]]; then
+            echo "Could not find checksum for ${ZIP_NAME} in checksums.txt"
+            exit 1
+          fi
+
+          echo "tap_repo=${TAP_REPO}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "zip_url=${ZIP_URL}" >> "${GITHUB_OUTPUT}"
+          echo "sha256=${SHA256}" >> "${GITHUB_OUTPUT}"
+
+      - name: Update cask in tap repository
+        if: steps.config.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          TAP_REPO="${{ steps.meta.outputs.tap_repo }}"
+          TAG="${{ steps.meta.outputs.tag }}"
+          VERSION="${{ steps.meta.outputs.version }}"
+          ZIP_URL="${{ steps.meta.outputs.zip_url }}"
+          SHA256="${{ steps.meta.outputs.sha256 }}"
+
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${TAP_REPO}.git" tap
+          mkdir -p tap/Casks
+
+          cat > tap/Casks/clipper.rb <<EOF
+cask "clipper" do
+  version "${VERSION}"
+  sha256 "${SHA256}"
+
+  url "${ZIP_URL}"
+  name "Clipper"
+  desc "Minimal macOS clipboard manager"
+  homepage "https://github.com/${GITHUB_REPOSITORY}"
+
+  app "Clipper.app"
+end
+EOF
+
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- Casks/clipper.rb; then
+            echo "No Homebrew cask changes to commit."
+            exit 0
+          fi
+
+          git add Casks/clipper.rb
+          git commit -m "clipper ${TAG}"
+          git push origin HEAD
