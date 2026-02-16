@@ -74,7 +74,7 @@ final class ClipboardStore {
         guard !normalized.isEmpty else { return }
 
         // Don't remove if the existing item is pinned, just keep it
-        if let existingIndex = items.firstIndex(where: { normalize($0.fullText) == normalized }) {
+        if let existingIndex = items.firstIndex(where: { $0.fullText != nil && normalize($0.fullText!) == normalized }) {
             if items[existingIndex].isPinned {
                 // If pinned, just update its timestamp to bring it to the top of history? 
                 // No, let's keep pins stable and just not add a duplicate to history.
@@ -128,7 +128,7 @@ final class ClipboardStore {
     func filteredItems(query: String) -> [ClipboardItem] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return items }
-        return items.filter { $0.fullText.localizedCaseInsensitiveContains(trimmed) }
+        return items.filter { $0.fullText?.localizedCaseInsensitiveContains(trimmed) ?? false }
     }
 
     private func storageURL() -> URL? {
@@ -174,8 +174,7 @@ final class ClipboardStore {
         }
 
         saveWorkItem = workItem
-        let deadline: DispatchTime = .now() + saveDelay
-        saveQueue.asyncAfter(deadline: deadline, execute: workItem)
+        saveQueue.asyncAfter(deadline: .now() + saveDelay, execute: workItem)
     }
 
     private func saveToDisk(snapshot: [ClipboardItem]) {

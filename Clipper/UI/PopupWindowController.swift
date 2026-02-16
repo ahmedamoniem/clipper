@@ -33,7 +33,11 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
         window?.delegate = self
 
         let contentView = ClipboardPopupView(store: store, viewModel: viewModel) { [weak self] item in
-            Self.copyToPasteboard(item.fullText)
+            if item.isImage {
+                // Image already copied to pasteboard in ClipboardPopupView
+            } else if let text = item.fullText {
+                Self.copyToPasteboard(text)
+            }
             guard let self else { return }
             let targetApp = previousApp
             if AutoPaste.isTrusted {
@@ -116,6 +120,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
 final class PopupViewModel {
     var searchText: String = ""
     var selectedId: ClipboardItem.ID?
+    var hoveredId: ClipboardItem.ID?
     var focusToken: UUID = UUID()
     var showSettings: Bool = false
     var isTrusted: Bool = AutoPaste.isTrusted
@@ -123,6 +128,7 @@ final class PopupViewModel {
     func resetForShow(defaultSelectionId: ClipboardItem.ID?) {
         searchText = ""
         selectedId = defaultSelectionId
+        hoveredId = nil
         focusToken = UUID()
         refreshTrustStatus()
     }

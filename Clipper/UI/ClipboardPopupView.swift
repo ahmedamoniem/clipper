@@ -9,7 +9,7 @@ struct ClipboardPopupView: View {
 
     private var filteredItems: [ClipboardItem] {
         store.filteredItems(query: viewModel.searchText)
-    } 
+    }
 
     private var pinnedItems: [ClipboardItem] {
         filteredItems.filter { $0.isPinned }
