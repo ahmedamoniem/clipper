@@ -92,7 +92,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0F74F9C80E504E59B3167234 /* ClipperTests */ = {
+		0F74F9C80E504E59B3167234 /* ../ClipperTests */ = {
 			isa = PBXGroup;
 			children = (
 				9A65C7E2A36A4DE6BA36E48A /* ClipboardStoreTests.swift */,
@@ -127,7 +127,7 @@
 				5616A1465BB44B749175E393 /* UI */,
 				234A34D99CC64BFDB40FB430 /* Hotkey */,
 				73499CE2554C451DA488C8E9 /* Utils */,
-				0F74F9C80E504E59B3167234 /* ClipperTests */,
+				0F74F9C80E504E59B3167234 /* ../ClipperTests */,
 				8710474D390A4B1AB4DE33B1 /* Info.plist */,
 				8B53E330FDA24BCCBFCA5C9D /* Frameworks */,
 				2D63BB7E0DE94BA481E8B3C9 /* Products */,
@@ -324,9 +324,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 2G8J757232;
+				DEVELOPMENT_TEAM = 44X92FGN76;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Clipper/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Clipper;
@@ -335,23 +336,24 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.ahmedamoniem.clipper;
 				PRODUCT_NAME = Clipper;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;
 			};
 			name = Release;
 		};
-			1C661568531E480D9FE021F6 /* Debug */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-					"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
-					CODE_SIGN_STYLE = Automatic;
-					DEVELOPMENT_TEAM = 2G8J757232;
-					ENABLE_TESTABILITY = YES;
-					ENABLE_HARDENED_RUNTIME = YES;
-					INFOPLIST_FILE = Clipper/Info.plist;
-					INFOPLIST_KEY_CFBundleDisplayName = Clipper;
-					INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+		1C661568531E480D9FE021F6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 44X92FGN76;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_TESTABILITY = YES;
+				INFOPLIST_FILE = Clipper/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Clipper;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.ahmedamoniem.clipper;
