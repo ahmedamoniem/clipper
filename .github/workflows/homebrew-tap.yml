@@ -75,18 +75,18 @@ jobs:
           mkdir -p tap/Casks
 
           cat > tap/Casks/clipper.rb <<EOF
-cask "clipper" do
-  version "${VERSION}"
-  sha256 "${SHA256}"
+          cask "clipper" do
+            version "${VERSION}"
+            sha256 "${SHA256}"
 
-  url "${ZIP_URL}"
-  name "Clipper"
-  desc "Minimal macOS clipboard manager"
-  homepage "https://github.com/${GITHUB_REPOSITORY}"
+            url "${ZIP_URL}"
+            name "Clipper"
+            desc "Minimal macOS clipboard manager"
+            homepage "https://github.com/${GITHUB_REPOSITORY}"
 
-  app "Clipper.app"
-end
-EOF
+            app "Clipper.app"
+          end
+          EOF
 
           cd tap
           git config user.name "github-actions[bot]"
