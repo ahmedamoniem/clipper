@@ -57,7 +57,7 @@ Clipper tracks your clipboard history in the background, allowing you to recall 
 ### Install via Homebrew (Recommended)
 
 ```bash
-brew install --cask ahmedamoniem/tap/clipper
+brew install --cask https://github.com/ahmedamoniem/clipper/releases/latest/download/clipper.rb
 ```
 
 ### Build from Source
@@ -74,13 +74,9 @@ brew install --cask ahmedamoniem/tap/clipper
     If using **Auto-Paste**, go to:
     `System Settings` > `Privacy & Security` > `Accessibility` and add **Clipper**.
 
-### Homebrew Maintainer Setup
+### Homebrew Notes
 
-The repo includes an automation workflow (`.github/workflows/homebrew-tap.yml`) that updates your tap cask after each published GitHub release.
-
-- Create tap repo: `ahmedamoniem/homebrew-tap`
-- Add repo secret: `HOMEBREW_TAP_TOKEN` (PAT with `repo` scope to push to tap)
-- Optional repo variable: `HOMEBREW_TAP_REPO` if your tap repo name is different
+Each GitHub release publishes a `clipper.rb` cask file as a release asset, so no separate tap repository is required.
 
 ---
 ## 📝 Notes & Limitations

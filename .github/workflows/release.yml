@@ -76,6 +76,34 @@ jobs:
           echo "zip_name=${ZIP_NAME}" >> "${GITHUB_OUTPUT}"
           echo "dmg_name=${DMG_NAME}" >> "${GITHUB_OUTPUT}"
 
+      - name: Generate Homebrew cask file
+        id: cask
+        shell: bash
+        run: |
+          TAG="${{ steps.version.outputs.version }}"
+          VERSION="${TAG#v}"
+          ZIP_NAME="${{ steps.package.outputs.zip_name }}"
+          ZIP_SHA256="$(awk "/ ${ZIP_NAME}\$/ {print \$1}" checksums.txt)"
+
+          if [[ -z "${ZIP_SHA256}" ]]; then
+            echo "Could not resolve ZIP checksum for ${ZIP_NAME}"
+            exit 1
+          fi
+
+          cat > clipper.rb <<EOF
+          cask "clipper" do
+            version "${VERSION}"
+            sha256 "${ZIP_SHA256}"
+
+            url "https://github.com/${{ github.repository }}/releases/download/${TAG}/${ZIP_NAME}"
+            name "Clipper"
+            desc "Minimal macOS clipboard manager"
+            homepage "https://github.com/${{ github.repository }}"
+
+            app "Clipper.app"
+          end
+          EOF
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -87,3 +115,4 @@ jobs:
             ${{ steps.package.outputs.zip_name }}
             ${{ steps.package.outputs.dmg_name }}
             checksums.txt
+            clipper.rb
