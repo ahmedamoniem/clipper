@@ -45,15 +45,21 @@ jobs:
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "release_name=${RELEASE_NAME}" >> "${GITHUB_OUTPUT}"
 
-      - name: Build (Release, unsigned)
+      - name: Build (Release)
         run: |
           xcodebuild \
             -project Clipper.xcodeproj \
             -scheme Clipper \
             -configuration Release \
             -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Ensure app has ad-hoc signature
+        shell: bash
+        run: |
+          APP_PATH="build/Build/Products/Release/Clipper.app"
+          codesign --force --deep --sign - "${APP_PATH}"
+          codesign --verify --deep --strict --verbose=2 "${APP_PATH}"
 
       - name: Package release artifacts
         id: package
@@ -63,13 +69,22 @@ jobs:
           APP_PATH="build/Build/Products/Release/Clipper.app"
           ZIP_NAME="Clipper-${VERSION}-macOS.zip"
           DMG_NAME="Clipper-${VERSION}-macOS.dmg"
+          DMG_STAGING_DIR="build/dmg-staging"
 
           ditto -c -k --sequesterRsrc --keepParent "${APP_PATH}" "${ZIP_NAME}"
+
+          rm -rf "${DMG_STAGING_DIR}"
+          mkdir -p "${DMG_STAGING_DIR}"
+          cp -R "${APP_PATH}" "${DMG_STAGING_DIR}/"
+          ln -s /Applications "${DMG_STAGING_DIR}/Applications"
+
           hdiutil create \
             -volname "Clipper" \
-            -srcfolder "${APP_PATH}" \
+            -srcfolder "${DMG_STAGING_DIR}" \
             -ov -format UDZO \
             "${DMG_NAME}"
+
+          rm -rf "${DMG_STAGING_DIR}"
 
           shasum -a 256 "${ZIP_NAME}" "${DMG_NAME}" > checksums.txt
 
