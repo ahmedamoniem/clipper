@@ -45,15 +45,21 @@ jobs:
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "release_name=${RELEASE_NAME}" >> "${GITHUB_OUTPUT}"
 
-      - name: Build (Release, unsigned)
+      - name: Build (Release)
         run: |
           xcodebuild \
             -project Clipper.xcodeproj \
             -scheme Clipper \
             -configuration Release \
             -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Ensure app has ad-hoc signature
+        shell: bash
+        run: |
+          APP_PATH="build/Build/Products/Release/Clipper.app"
+          codesign --force --deep --sign - "${APP_PATH}"
+          codesign --verify --deep --strict --verbose=2 "${APP_PATH}"
 
       - name: Package release artifacts
         id: package

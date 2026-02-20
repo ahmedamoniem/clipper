@@ -3,6 +3,9 @@ import Carbon
 import ApplicationServices
 
 enum AutoPaste {
+    private static let pasteRetryInterval: TimeInterval = 0.05
+    private static let maxPasteActivationRetries = 8
+
     /// Silently checks if the app is trusted.
     static var isTrusted: Bool {
         isTrusted(prompt: false)
@@ -15,12 +18,13 @@ enum AutoPaste {
 
     static func paste(into app: NSRunningApplication?) {
         guard let app else { return }
-        guard isTrusted else { return }
+        guard isTrusted else {
+            requestPermission()
+            return
+        }
 
         app.activate(options: [])
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            sendCmdV()
-        }
+        sendCmdVWhenFrontmost(targetApp: app, retriesRemaining: maxPasteActivationRetries)
     }
 
     static func isTrusted(prompt: Bool) -> Bool {
@@ -36,5 +40,18 @@ enum AutoPaste {
         keyUp?.flags = .maskCommand
         keyDown?.post(tap: .cghidEventTap)
         keyUp?.post(tap: .cghidEventTap)
+    }
+
+    private static func sendCmdVWhenFrontmost(targetApp: NSRunningApplication, retriesRemaining: Int) {
+        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        if frontmostPID == targetApp.processIdentifier || retriesRemaining <= 0 {
+            sendCmdV()
+            return
+        }
+
+        targetApp.activate(options: [])
+        DispatchQueue.main.asyncAfter(deadline: .now() + pasteRetryInterval) {
+            sendCmdVWhenFrontmost(targetApp: targetApp, retriesRemaining: retriesRemaining - 1)
+        }
     }
 }
