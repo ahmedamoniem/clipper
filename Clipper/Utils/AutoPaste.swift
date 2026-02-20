@@ -3,6 +3,11 @@ import Carbon
 import ApplicationServices
 
 enum AutoPaste {
+    enum PasteDispatchDecision: Equatable {
+        case send
+        case retry(nextRetriesRemaining: Int)
+    }
+
     private static let pasteRetryInterval: TimeInterval = 0.05
     private static let maxPasteActivationRetries = 8
 
@@ -32,6 +37,17 @@ enum AutoPaste {
         return AXIsProcessTrustedWithOptions(options)
     }
 
+    static func pasteDispatchDecision(
+        frontmostPID: pid_t?,
+        targetPID: pid_t,
+        retriesRemaining: Int
+    ) -> PasteDispatchDecision {
+        if frontmostPID == targetPID || retriesRemaining <= 0 {
+            return .send
+        }
+        return .retry(nextRetriesRemaining: retriesRemaining - 1)
+    }
+
     private static func sendCmdV() {
         guard let source = CGEventSource(stateID: .combinedSessionState) else { return }
         let keyDown = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: true)
@@ -43,15 +59,19 @@ enum AutoPaste {
     }
 
     private static func sendCmdVWhenFrontmost(targetApp: NSRunningApplication, retriesRemaining: Int) {
-        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
-        if frontmostPID == targetApp.processIdentifier || retriesRemaining <= 0 {
+        let decision = pasteDispatchDecision(
+            frontmostPID: NSWorkspace.shared.frontmostApplication?.processIdentifier,
+            targetPID: targetApp.processIdentifier,
+            retriesRemaining: retriesRemaining
+        )
+        switch decision {
+        case .send:
             sendCmdV()
-            return
-        }
-
-        targetApp.activate(options: [])
-        DispatchQueue.main.asyncAfter(deadline: .now() + pasteRetryInterval) {
-            sendCmdVWhenFrontmost(targetApp: targetApp, retriesRemaining: retriesRemaining - 1)
+        case .retry(let nextRetriesRemaining):
+            targetApp.activate(options: [])
+            DispatchQueue.main.asyncAfter(deadline: .now() + pasteRetryInterval) {
+                sendCmdVWhenFrontmost(targetApp: targetApp, retriesRemaining: nextRetriesRemaining)
+            }
         }
     }
 }
