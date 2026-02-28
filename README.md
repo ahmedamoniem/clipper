@@ -54,10 +54,12 @@ Clipper tracks your clipboard history in the background, allowing you to recall 
 
 ## 📦 Installation & Setup
 
-### Install via Homebrew (Recommended)
+### Install via Remote Script (Recommended)
+
+Run the following command in your terminal to automatically download, install, and open Clipper:
 
 ```bash
-brew install --cask https://github.com/ahmedamoniem/clipper/releases/latest/download/clipper.rb
+curl -fsSL https://raw.githubusercontent.com/ahmedamoniem/clipper/main/install.sh | bash
 ```
 
 ### Build from Source
