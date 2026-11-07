@@ -5,19 +5,22 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
-    private let store = ClipboardStore()
+    private lazy var store = ClipboardStore()
     private lazy var watcher = ClipboardWatcher(store: store)
     private lazy var popupController = PopupWindowController(store: store)
     private let hotkeyManager = HotkeyManager()
     private var preferencesWindow: NSWindow?
+    private var isTesting: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil || NSClassFromString("XCTestCase") != nil
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Hosted unit tests must not watch or write the user's real clipboard history.
+        guard !isTesting else { return }
         NSApp.setActivationPolicy(.accessory)
         setupStatusItem()
         setupHotkey()
         watcher.start()
-
-        NotificationCenter.default.addObserver(self, selector: #selector(updateGlobalHotkey), name: Notification.Name.hotkeySettingsChanged, object: nil)
     }
 
     private func setupStatusItem() {
@@ -94,7 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let preferencesView = HotkeyPreferencesView()
+        let preferencesView = HotkeyPreferencesView(store: store, hotkeyManager: hotkeyManager)
         let hostingController = NSHostingController(rootView: preferencesView)
         let window = NSWindow(contentViewController: hostingController)
         window.title = "Preferences"
@@ -109,8 +112,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    @objc private func updateGlobalHotkey() {
-        hotkeyManager.unregister()
-        hotkeyManager.registerCurrentSettings()
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !isTesting else { return .terminateNow }
+        watcher.stop()
+        AutoPaste.cancelPendingPaste()
+        guard !store.flush() else { return .terminateNow }
+        let alert = NSAlert()
+        alert.messageText = "Clipboard history could not be saved"
+        alert.informativeText = "Stay open to preserve unsaved clips, or quit without saving the latest changes."
+        alert.addButton(withTitle: "Stay Open")
+        alert.addButton(withTitle: "Quit Without Saving")
+        if alert.runModal() == .alertSecondButtonReturn { return .terminateNow }
+        watcher.start()
+        return .terminateCancel
     }
 }

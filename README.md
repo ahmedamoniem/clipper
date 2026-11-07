@@ -20,8 +20,8 @@ Clipper tracks your clipboard history in the background, allowing you to recall 
 
 ## ✨ Key Features
 
-* **⚡ Instant Recall:** Access your last 10 text entries via `Control + V`.
-* **🔍 Fuzzy Search:** Start typing to filter through your history immediately.
+* **⚡ Instant Recall:** Access your text history (500 recent entries by default) via `Control + V`.
+* **🔍 Text Search:** Start typing to filter through your history immediately.
 * **💾 Persistent:** History is saved to `~/Library/Application Support/` and survives reboots.
 * **🖱️ Auto-Paste:** Optionally paste directly into the active app (requires Accessibility permissions).
 
@@ -54,17 +54,29 @@ Clipper tracks your clipboard history in the background, allowing you to recall 
 
 ## 📦 Installation & Setup
 
-### Install via Homebrew (Recommended)
+### Download the App
 
-```bash
-brew install --cask https://github.com/ahmedamoniem/clipper/releases/latest/download/clipper.rb
-```
+1. Open the [latest release](https://github.com/ahmedamoniem/clipper/releases/latest).
+2. Download `Clipper-macOS.zip` and extract it.
+3. Drag `Clipper.app` into **Applications**, then open it.
+
+The app requires macOS 14 or later and supports Apple silicon and Intel Macs.
+Downloads are ad hoc signed and are not notarized by Apple.
+
+### Releases
+
+One GitHub Actions workflow runs tests for pushes and pull requests. After tests
+pass on a push to `main`, it builds and signs the Release app, packages a single
+ZIP, and publishes it with generated release notes. Release versions combine the
+app's marketing version with the workflow run number, for example `v1.0.42`.
+The ZIP filename stays `Clipper-macOS.zip`; the version is recorded in the release
+tag and app bundle.
 
 ### Build from Source
 
 1.  **Clone the Repo**
     ```bash
-    git clone [[https://github.com/yourusername/Clipper.git](https://github.com/ahmedamoniem/clipper.git)t]([https://github.com/yourusername/Clipper.git](https://github.com/ahmedamoniem/clipper.git))
+    git clone https://github.com/ahmedamoniem/clipper.git
     ```
 2.  **Open in Xcode**
     ```bash
@@ -74,10 +86,6 @@ brew install --cask https://github.com/ahmedamoniem/clipper/releases/latest/down
     If using **Auto-Paste**, go to:
     `System Settings` > `Privacy & Security` > `Accessibility` and add **Clipper**.
 
-### Homebrew Notes
-
-Each GitHub release publishes a `clipper.rb` cask file as a release asset, so no separate tap repository is required.
-
 ---
 ## 📝 Notes & Limitations
 
@@ -86,7 +94,7 @@ Each GitHub release publishes a `clipper.rb` cask file as a release asset, so no
 > `~/Library/Application Support/Clipper/clipboard_history.json`
 
 * **🔤 Text-Only:** Currently supports text snippets only; images and rich media are not yet supported.
-* **📂 Data Management:** You can clear your entire history by deleting the JSON file mentioned above while the app is closed.
+* **📂 Data Management:** Clear history in Preferences > Storage. Pinned clips are exempt from retention limits and auto-cleaning, but Clear History removes them too.
 * **🖱️ Popup Behavior:** The clipboard interface is designed to be non-intrusive; clicking anywhere outside the popup will automatically close it.
 * **⌨️ Auto-Paste Mechanism:** This feature is **disabled by default**. When enabled, it utilizes macOS Accessibility permissions to send a `Cmd + V` command to the application that was focused before the Clipper popup appeared.
 
@@ -102,7 +110,7 @@ on simplicity.
 
 - [ ] <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/image.svg" width="16" height="16" /> Image & Rich Text support
 - [ ] <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/lock.svg" width="16" height="16" /> Encrypted local storage
-- [ ] <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/star.svg" width="16" height="16" /> Pin favorite items
+- [x] <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/star.svg" width="16" height="16" /> Pin favorite items
 
 ---
 

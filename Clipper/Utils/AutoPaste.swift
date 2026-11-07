@@ -2,10 +2,18 @@ import AppKit
 import Carbon
 import ApplicationServices
 
+@MainActor
 enum AutoPaste {
     enum PasteDispatchDecision: Equatable {
         case send
+        case cancel
         case retry(nextRetriesRemaining: Int)
+    }
+
+    private static var requestID = UUID()
+
+    static func cancelPendingPaste() {
+        requestID = UUID()
     }
 
     private static let pasteRetryInterval: TimeInterval = 0.05
@@ -22,14 +30,17 @@ enum AutoPaste {
     }
 
     static func paste(into app: NSRunningApplication?) {
-        guard let app else { return }
-        guard isTrusted else {
-            requestPermission()
-            return
+        cancelPendingPaste()
+        guard let app, !app.isTerminated,
+              app.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+              AppSettings.shared.autoPasteEnabled, isTrusted else { return }
+        let id = requestID
+        let changeCount = NSPasteboard.general.changeCount
+        guard app.activate(options: []) else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + pasteRetryInterval) {
+            sendCmdVWhenFrontmost(targetApp: app, retriesRemaining: maxPasteActivationRetries,
+                                 request: id, changeCount: changeCount)
         }
-
-        app.activate(options: [])
-        sendCmdVWhenFrontmost(targetApp: app, retriesRemaining: maxPasteActivationRetries)
     }
 
     static func isTrusted(prompt: Bool) -> Bool {
@@ -37,14 +48,15 @@ enum AutoPaste {
         return AXIsProcessTrustedWithOptions(options)
     }
 
-    static func pasteDispatchDecision(
+    nonisolated static func pasteDispatchDecision(
         frontmostPID: pid_t?,
         targetPID: pid_t,
         retriesRemaining: Int
     ) -> PasteDispatchDecision {
-        if frontmostPID == targetPID || retriesRemaining <= 0 {
+        if frontmostPID == targetPID {
             return .send
         }
+        guard retriesRemaining > 0 else { return .cancel }
         return .retry(nextRetriesRemaining: retriesRemaining - 1)
     }
 
@@ -58,7 +70,11 @@ enum AutoPaste {
         keyUp?.post(tap: .cghidEventTap)
     }
 
-    private static func sendCmdVWhenFrontmost(targetApp: NSRunningApplication, retriesRemaining: Int) {
+    private static func sendCmdVWhenFrontmost(targetApp: NSRunningApplication, retriesRemaining: Int,
+                                            request: UUID, changeCount: Int) {
+        guard request == requestID, !targetApp.isTerminated,
+              NSPasteboard.general.changeCount == changeCount,
+              AppSettings.shared.autoPasteEnabled, isTrusted else { return }
         let decision = pasteDispatchDecision(
             frontmostPID: NSWorkspace.shared.frontmostApplication?.processIdentifier,
             targetPID: targetApp.processIdentifier,
@@ -67,10 +83,12 @@ enum AutoPaste {
         switch decision {
         case .send:
             sendCmdV()
+        case .cancel:
+            return
         case .retry(let nextRetriesRemaining):
-            targetApp.activate(options: [])
             DispatchQueue.main.asyncAfter(deadline: .now() + pasteRetryInterval) {
-                sendCmdVWhenFrontmost(targetApp: targetApp, retriesRemaining: nextRetriesRemaining)
+                sendCmdVWhenFrontmost(targetApp: targetApp, retriesRemaining: nextRetriesRemaining,
+                                     request: request, changeCount: changeCount)
             }
         }
     }

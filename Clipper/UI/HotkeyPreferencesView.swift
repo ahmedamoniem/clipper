@@ -3,6 +3,8 @@ import Carbon
 
 
 struct HotkeyPreferencesView: View {
+    let store: ClipboardStore
+    let hotkeyManager: HotkeyManager
     @State private var selectedTab: PreferenceTab = .general
     
     enum PreferenceTab: String, CaseIterable, Identifiable {
@@ -34,15 +36,11 @@ struct HotkeyPreferencesView: View {
             Group {
                 switch selectedTab {
                 case .general:
-                    GeneralTab()
+                    GeneralTab(settings: store.settings)
                 case .hotkey:
-                    if #available(macOS 14.0, *) {
-                        HotkeyTab()
-                    } else {
-                        // Fallback on earlier versions
-                    }
+                    HotkeyTab(manager: hotkeyManager, settings: store.settings)
                 case .storage:
-                    StorageTab()
+                    StorageTab(store: store)
                 case .about:
                     AboutTab()
                 }
@@ -54,12 +52,24 @@ struct HotkeyPreferencesView: View {
 
 @available(macOS 14.0, *)
 struct HotkeyTab: View {
-    @State private var keyCode: Int = AppSettings.hotkeyKeyCode
-    @State private var modifierFlags: Int = AppSettings.hotkeyModifierFlags
+    let manager: HotkeyManager
+    let settings: AppSettings
+    @State private var keyCode: Int
+    @State private var modifierFlags: Int
+
+    init(manager: HotkeyManager, settings: AppSettings) {
+        self.manager = manager
+        self.settings = settings
+        _keyCode = State(initialValue: settings.hotkeyKeyCode)
+        _modifierFlags = State(initialValue: settings.hotkeyModifierFlags)
+    }
     @State private var isListening = false
 
     var body: some View {
         Form {
+            if let error = manager.registrationError {
+                Text(error).foregroundStyle(.red)
+            }
             Section {
                 LabeledContent("Shortcut:") {
                     HStack(spacing: 12) {
@@ -77,10 +87,12 @@ struct HotkeyTab: View {
                         
                         Button(isListening ? "Recording..." : "Record") {
                             isListening.toggle()
+                            if !isListening { manager.registerCurrentSettings(settings: settings) }
                         }
                         .controlSize(.small)
                         
                         Button("Reset") {
+                            isListening = false
                             keyCode = 9
                             modifierFlags = Int(controlKey)
                             saveHotkey()
@@ -98,32 +110,50 @@ struct HotkeyTab: View {
         .formStyle(.grouped)
         .navigationTitle("Hotkey")
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(HotkeyCaptureView(isActive: isListening) { newKey, newMods in
+        .background(HotkeyCaptureView(isActive: isListening, onCaptured: { newKey, newMods in
             keyCode = newKey
             modifierFlags = newMods
             isListening = false
             saveHotkey()
-        })
+        }, onCancel: { isListening = false; manager.registerCurrentSettings(settings: settings) }))
+        .onChange(of: isListening) { _, listening in
+            if listening { manager.unregister() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
+            if isListening {
+                isListening = false
+                manager.registerCurrentSettings(settings: settings)
+            }
+        }
+        .onDisappear {
+            isListening = false
+            manager.registerCurrentSettings(settings: settings, preservingError: true)
+        }
     }
-    
+
     private func saveHotkey() {
-        AppSettings.hotkeyKeyCode = keyCode
-        AppSettings.hotkeyModifierFlags = modifierFlags
-        NotificationCenter.default.post(name: .hotkeySettingsChanged, object: nil)
+        if manager.register(keyCode: keyCode, modifierFlags: modifierFlags) {
+            settings.hotkeyKeyCode = keyCode
+            settings.hotkeyModifierFlags = modifierFlags
+        } else {
+            manager.registerCurrentSettings(settings: settings, preservingError: true)
+            keyCode = settings.hotkeyKeyCode
+            modifierFlags = settings.hotkeyModifierFlags
+        }
     }
 }
 
 struct GeneralTab: View {
-    @AppStorage("AutoPasteEnabled") private var autoPasteEnabled = false
+    @Bindable var settings: AppSettings
     
     var body: some View {
         Form {
             Section {
-                Toggle("Auto-paste on Enter", isOn: $autoPasteEnabled)
+                Toggle("Auto-paste on Enter", isOn: $settings.autoPasteEnabled)
             } header: {
                 Text("Clipboard Behavior")
             } footer: {
-                if autoPasteEnabled {
+                if settings.autoPasteEnabled {
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Requires Accessibility permission in System Settings", systemImage: "exclamationmark.triangle")
                             .foregroundStyle(.orange)
@@ -138,43 +168,33 @@ struct GeneralTab: View {
             }
         }
         .formStyle(.grouped)
+        .onChange(of: settings.autoPasteEnabled) { _, enabled in
+            if enabled { AutoPaste.requestPermission() }
+            else { AutoPaste.cancelPendingPaste() }
+        }
         .navigationTitle("General")
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
 
 struct StorageTab: View {
-    @State private var fileSize: String = "Calculating..."
-    @State private var imageCount: Int = 0
-    @State private var textCount: Int = 0
+    let store: ClipboardStore
     @State private var showingAlert = false
+    @State private var fileSize = "Calculating..."
     
     var body: some View {
         Form {
             Section {
                 LabeledContent("Total Size:") {
-                    Text(fileSize)
-                        .foregroundStyle(.secondary)
+                    Text(fileSize).foregroundStyle(.secondary)
                 }
-                
                 LabeledContent("Items:") {
-                    Text("\(textCount) text, \(imageCount) images")
-                        .foregroundStyle(.secondary)
+                    Text("\(store.items.count)").foregroundStyle(.secondary)
                 }
-                
-                LabeledContent("Max Image Size:") {
-                    HStack {
-                        Stepper(
-                            "\(AppSettings.shared.maxImageSizeMB) MB",
-                            value: Binding(
-                                get: { AppSettings.shared.maxImageSizeMB },
-                                set: { AppSettings.shared.maxImageSizeMB = $0 }
-                            ),
-                            in: 1...50
-                        )
-                    }
+                if let error = store.persistenceError {
+                    Text(error).foregroundStyle(.red)
                 }
-                
+
                 Button("Clear History") {
                     showingAlert = true
                 }
@@ -190,23 +210,23 @@ struct StorageTab: View {
                 Toggle(
                     "Auto-clean old clips",
                     isOn: Binding(
-                        get: { AppSettings.shared.autoCleanEnabled },
-                        set: { AppSettings.shared.autoCleanEnabled = $0 }
+                        get: { store.settings.autoCleanEnabled },
+                        set: { store.settings.autoCleanEnabled = $0 }
                     )
                 )
                 
-                if AppSettings.shared.autoCleanEnabled {
+                if store.settings.autoCleanEnabled {
                     HStack {
                         Text("Delete clips older than")
                         Stepper(
-                            "\(AppSettings.shared.autoCleanDays)",
+                            "\(store.settings.autoCleanDays)",
                             value: Binding(
-                                get: { AppSettings.shared.autoCleanDays },
-                                set: { AppSettings.shared.autoCleanDays = $0 }
+                                get: { store.settings.autoCleanDays },
+                                set: { store.settings.autoCleanDays = $0 }
                             ),
                             in: 1...365
                         )
-                        Text(AppSettings.shared.autoCleanDays == 1 ? "day" : "days")
+                        Text(store.settings.autoCleanDays == 1 ? "day" : "days")
                     }
                 }
             } header: {
@@ -215,45 +235,16 @@ struct StorageTab: View {
                 Text("Automatically remove clipboard items older than the specified number of days (pinned items are never deleted)")
             }
             
-            Section {
-                Toggle(
-                    "Auto-clean old clips",
-                    isOn: Binding(
-                        get: { AppSettings.shared.autoCleanEnabled },
-                        set: { AppSettings.shared.autoCleanEnabled = $0 }
-                    )
-                )
-                
-                if AppSettings.shared.autoCleanEnabled {
-                    HStack {
-                        Text("Delete clips older than")
-                        Stepper(
-                            "\(AppSettings.shared.autoCleanDays)",
-                            value: Binding(
-                                get: { AppSettings.shared.autoCleanDays },
-                                set: { AppSettings.shared.autoCleanDays = $0 }
-                            ),
-                            in: 1...365
-                        )
-                        Text(AppSettings.shared.autoCleanDays == 1 ? "day" : "days")
-                    }
-                }
-            } header: {
-                Text("Auto-Clean")
-            } footer: {
-                Text("Automatically remove clipboard items older than the specified number of days (pinned items are never deleted)")
-            }
         }
         .formStyle(.grouped)
         .navigationTitle("Storage")
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .onAppear {
-            updateFileSize()
-        }
+        .onAppear { updateFileSize() }
         .alert("Clear History?", isPresented: $showingAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Clear", role: .destructive) {
-                clearHistory()
+                store.clear()
+                updateFileSize()
             }
         } message: {
             Text("This will permanently delete all clipboard history. This action cannot be undone.")
@@ -261,55 +252,20 @@ struct StorageTab: View {
     }
     
     private func updateFileSize() {
-        let fileManager = FileManager.default
-        guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            fileSize = "Unknown"
-            return
-        }
-        let clipperDir = base.appendingPathComponent("Clipper", isDirectory: true)
-        let jsonURL = clipperDir.appendingPathComponent("clipboard_history.json")
-        let imagesDir = clipperDir.appendingPathComponent("clipboard_images", isDirectory: true)
-        
-        var totalSize: Int64 = 0
-        
-        // JSON file size
-        if let attrs = try? fileManager.attributesOfItem(atPath: jsonURL.path),
-           let size = attrs[.size] as? Int64 {
-            totalSize += size
-        }
-        
-        // Images directory size
-        if let enumerator = fileManager.enumerator(at: imagesDir, includingPropertiesForKeys: [.fileSizeKey]) {
-            for case let fileURL as URL in enumerator {
-                if let attrs = try? fileManager.attributesOfItem(atPath: fileURL.path),
-                   let size = attrs[.size] as? Int64 {
-                    totalSize += size
+        let directory = store.storageURL.deletingLastPathComponent()
+        let keys: [URLResourceKey] = [.isRegularFileKey, .fileSizeKey]
+        let files = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: keys)
+        var bytes: Int64 = 0
+        if let files {
+            for case let file as URL in files {
+                if let values = try? file.resourceValues(forKeys: Set(keys)), values.isRegularFile == true {
+                    bytes += Int64(values.fileSize ?? 0)
                 }
             }
         }
-        
-        fileSize = ByteCountFormatter.string(fromByteCount: totalSize, countStyle: .file)
-        
-        // Count items
-        if let data = try? Data(contentsOf: jsonURL),
-           let items = try? JSONDecoder().decode([ClipboardItem].self, from: data) {
-            textCount = items.filter { $0.contentType == .text }.count
-            imageCount = items.filter { $0.contentType == .image }.count
-        }
+        fileSize = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
-    
-    private func clearHistory() {
-        let fileManager = FileManager.default
-        guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
-        let clipperDir = base.appendingPathComponent("Clipper", isDirectory: true)
-        let jsonURL = clipperDir.appendingPathComponent("clipboard_history.json")
-        let imagesDir = clipperDir.appendingPathComponent("clipboard_images", isDirectory: true)
-        
-        try? fileManager.removeItem(at: jsonURL)
-        try? fileManager.removeItem(at: imagesDir)
-        NotificationCenter.default.post(name: Notification.Name("ClearClipboardHistory"), object: nil)
-        updateFileSize()
-    }
+
 }
 
 struct AboutTab: View {

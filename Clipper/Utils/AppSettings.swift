@@ -1,42 +1,26 @@
 import Foundation
 import Carbon
-import SwiftUI
 import Observation
 
 @available(macOS 14.0, *)
 @Observable
+@MainActor
 final class AppSettings {
     static let shared = AppSettings()
     private let historyLimitKey = "HistoryLimit"
     private let autoCleanEnabledKey = "AutoCleanEnabled"
     private let autoCleanDaysKey = "AutoCleanDays"
-    private let maxImageSizeMBKey = "MaxImageSizeMB"
+    private let defaults: UserDefaults
 
     var historyLimit: Int {
         get {
             access(keyPath: \.historyLimit)
-            let limit = UserDefaults.standard.integer(forKey: historyLimitKey)
-            return limit == 0 ? 500 : limit
+            let limit = defaults.integer(forKey: historyLimitKey)
+            return max(1, min(limit == 0 ? 500 : limit, 1000))
         }
         set {
             withMutation(keyPath: \.historyLimit) {
-                UserDefaults.standard.set(newValue, forKey: historyLimitKey)
-            }
-        }
-    }
-    
-    var maxImageSizeMB: Int {
-        get {
-            access(keyPath: \.maxImageSizeMB)
-            let size = UserDefaults.standard.integer(forKey: maxImageSizeMBKey)
-            let effectiveSize = (size == 0 ? 10 : size)
-            let clampedSize = max(1, min(effectiveSize, 50))
-            return clampedSize
-        }
-        set {
-            withMutation(keyPath: \.maxImageSizeMB) {
-                let clampedSize = max(1, min(newValue, 50))
-                UserDefaults.standard.set(clampedSize, forKey: maxImageSizeMBKey)
+                defaults.set(max(1, min(newValue, 1000)), forKey: historyLimitKey)
             }
         }
     }
@@ -44,11 +28,11 @@ final class AppSettings {
     var autoCleanEnabled: Bool {
         get {
             access(keyPath: \.autoCleanEnabled)
-            return UserDefaults.standard.bool(forKey: autoCleanEnabledKey)
+            return defaults.bool(forKey: autoCleanEnabledKey)
         }
         set {
             withMutation(keyPath: \.autoCleanEnabled) {
-                UserDefaults.standard.set(newValue, forKey: autoCleanEnabledKey)
+                defaults.set(newValue, forKey: autoCleanEnabledKey)
             }
         }
     }
@@ -56,7 +40,7 @@ final class AppSettings {
     var autoCleanDays: Int {
         get {
             access(keyPath: \.autoCleanDays)
-            let days = UserDefaults.standard.integer(forKey: autoCleanDaysKey)
+            let days = defaults.integer(forKey: autoCleanDaysKey)
             let effectiveDays = (days == 0 ? 10 : days)
             let clampedDays = max(1, min(effectiveDays, 365))
             return clampedDays
@@ -64,35 +48,49 @@ final class AppSettings {
         set {
             withMutation(keyPath: \.autoCleanDays) {
                 let clampedDays = max(1, min(newValue, 365))
-                UserDefaults.standard.set(clampedDays, forKey: autoCleanDaysKey)
+                defaults.set(clampedDays, forKey: autoCleanDaysKey)
             }
         }
     }
 
     // Hotkey settings keys
-    private static let hotkeyKeyCodeKey = "HotkeyKeyCode"
-    private static let hotkeyModifierFlagsKey = "HotkeyModifierFlags"
+    private let hotkeyKeyCodeKey = "HotkeyKeyCode"
+    private let hotkeyModifierFlagsKey = "HotkeyModifierFlags"
 
     /// The key code for the global hotkey (default: kVK_ANSI_V = 9)
-    static var hotkeyKeyCode: Int {
+    var hotkeyKeyCode: Int {
         get {
-            let value = UserDefaults.standard.value(forKey: hotkeyKeyCodeKey) as? Int
+            let value = defaults.value(forKey: hotkeyKeyCodeKey) as? Int
             return value ?? 9 // kVK_ANSI_V
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: hotkeyKeyCodeKey)
+            defaults.set(newValue, forKey: hotkeyKeyCodeKey)
         }
     }
     /// The modifier flags for the global hotkey (default: controlKey = 4096)
-    static var hotkeyModifierFlags: Int {
+    var hotkeyModifierFlags: Int {
         get {
-            let value = UserDefaults.standard.value(forKey: hotkeyModifierFlagsKey) as? Int
+            let value = defaults.value(forKey: hotkeyModifierFlagsKey) as? Int
             return value ?? Int(controlKey) // 4096
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: hotkeyModifierFlagsKey)
+            defaults.set(newValue, forKey: hotkeyModifierFlagsKey)
         }
     }
 
-    private init() {}
+    var autoPasteEnabled: Bool {
+        get {
+            access(keyPath: \.autoPasteEnabled)
+            return defaults.bool(forKey: "AutoPasteEnabled")
+        }
+        set {
+            withMutation(keyPath: \.autoPasteEnabled) {
+                defaults.set(newValue, forKey: "AutoPasteEnabled")
+            }
+        }
+    }
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
 }

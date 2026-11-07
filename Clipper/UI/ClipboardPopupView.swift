@@ -68,7 +68,7 @@ struct ClipboardPopupView: View {
                                         .contentShape(Rectangle())
                                         .onTapGesture {
                                             viewModel.selectedId = item.id
-                                            select(item)
+                                            onSelect(item)
                                         }
                                 }
                             }
@@ -82,7 +82,7 @@ struct ClipboardPopupView: View {
                                     .contentShape(Rectangle())
                                     .onTapGesture {
                                         viewModel.selectedId = item.id
-                                        select(item)
+                                        onSelect(item)
                                     }
                             }
                         }
@@ -95,13 +95,9 @@ struct ClipboardPopupView: View {
                             }
                         }
                     }
-                    .onChange(of: viewModel.searchText) { _, _ in
-                        // Auto-select newest recent item when filtering, falling back to pinned
-                        let defaultId = recentItems.first?.id ?? pinnedItems.first?.id
-                        viewModel.selectedId = defaultId
-                        // Jump to top when search changes
-                        if let firstId = defaultId {
-                            proxy.scrollTo(firstId, anchor: .top)
+                    .onChange(of: viewModel.focusToken) { _, _ in
+                        if let selectedId = viewModel.selectedId {
+                            proxy.scrollTo(selectedId, anchor: .top)
                         }
                     }
                     .onAppear {
@@ -113,7 +109,10 @@ struct ClipboardPopupView: View {
                 }
             }
 
-            if viewModel.showSettings || !viewModel.isTrusted {
+            if let error = store.persistenceError {
+                Text(error).font(.caption).foregroundStyle(.red).padding(.horizontal, 12)
+            }
+            if viewModel.showSettings || (store.settings.autoPasteEnabled && !viewModel.isTrusted) {
                 Divider()
                 footerView
                     .padding(.horizontal, 12)
@@ -121,7 +120,7 @@ struct ClipboardPopupView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .frame(width: 360, height: (viewModel.showSettings || !viewModel.isTrusted) ? 480 : 400)
+        .frame(width: 360, height: 480)
         .background(Color(NSColor.windowBackgroundColor))
         .onMoveCommand { direction in
             handleMove(direction)
@@ -133,13 +132,21 @@ struct ClipboardPopupView: View {
             // Self-healing: refresh trust status reactively when user returns to app
             viewModel.refreshTrustStatus()
         }
+        .onChange(of: viewModel.searchText) { _, _ in
+            viewModel.selectedId = recentItems.first?.id ?? pinnedItems.first?.id
+        }
+        .onChange(of: filteredItems.map(\.id)) { _, ids in
+            if !ids.contains(where: { $0 == viewModel.selectedId }) {
+                viewModel.selectedId = recentItems.first?.id ?? pinnedItems.first?.id
+            }
+        }
         .background(hiddenActions)
     }
 
     private var footerView: some View {
         VStack(spacing: 10) {
             HStack {
-                if !viewModel.isTrusted {
+                if store.settings.autoPasteEnabled && !viewModel.isTrusted {
                     Button {
                         NSApp.sendAction(#selector(AppDelegate.showAccessibilityGuide), to: nil, from: nil)
                     } label: {
@@ -157,7 +164,7 @@ struct ClipboardPopupView: View {
                         .foregroundStyle(.secondary)
                         .help("Requires Accessibility permission to paste into other apps.")
                 } else {
-                    Text("Auto-Paste is active")
+                    Text(store.settings.autoPasteEnabled ? "Auto-Paste is active" : "Auto-Paste is off")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -247,17 +254,13 @@ struct ClipboardPopupView: View {
     private func selectCurrent() {
         if let selectedId = viewModel.selectedId,
            let item = filteredItems.first(where: { $0.id == selectedId }) {
-            select(item)
+            onSelect(item)
             return
         }
 
         if let first = filteredItems.first {
-            select(first)
+            onSelect(first)
         }
-    }
-
-    private func select(_ item: ClipboardItem) {
-        onSelect(item)
     }
 }
 
