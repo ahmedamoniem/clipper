@@ -59,7 +59,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
         guard let window = window else { return }
         AutoPaste.cancelPendingPaste()
         store.applyRetention()
-        let defaultSelectionId = store.items.first(where: { !$0.isPinned })?.id ?? store.items.first?.id
+        let defaultSelectionId = store.items.first(where: { $0.isPinned })?.id ?? store.items.first?.id
         viewModel.resetForShow(defaultSelectionId: defaultSelectionId)
         previousApp = NSWorkspace.shared.frontmostApplication
         position(window: window)

@@ -143,11 +143,11 @@ struct ClipboardPopupView: View {
             viewModel.refreshTrustStatus()
         }
         .onChange(of: viewModel.searchText) { _, _ in
-            viewModel.selectedId = recentItems.first?.id ?? pinnedItems.first?.id
+            viewModel.selectedId = combinedItems.first?.id
         }
         .onChange(of: filteredItems.map(\.id)) { _, ids in
             if !ids.contains(where: { $0 == viewModel.selectedId }) {
-                viewModel.selectedId = recentItems.first?.id ?? pinnedItems.first?.id
+                viewModel.selectedId = combinedItems.first?.id
             }
         }
         .background(hiddenActions)
@@ -279,7 +279,7 @@ struct ClipboardPopupView: View {
             return
         }
 
-        if let first = filteredItems.first {
+        if let first = combinedItems.first {
             onSelect(first)
         }
     }
