@@ -12,6 +12,8 @@ jobs:
           xcodebuild -project Clipper.xcodeproj -scheme Clipper -configuration Debug
           -destination 'platform=macOS' -derivedDataPath build
           CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
+      - name: Verify release signing with a disposable identity
+        run: bash scripts/test-release-signing.sh
 
   build-and-release:
     needs: build-and-test

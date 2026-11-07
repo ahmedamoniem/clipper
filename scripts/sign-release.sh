@@ -18,11 +18,28 @@ bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Co
     exit 1
 }
 
+# --keychain restricts identity lookup, but codesign also consults the search list.
+# Preserve existing entries, including paths containing spaces, for local use.
+keychain_listing=$(/usr/bin/security list-keychains -d user)
+original_keychains=()
+while IFS= read -r entry; do
+    [[ "$entry" = *\"*\"* ]] || continue
+    entry=${entry#*\"}
+    entry=${entry%\"*}
+    original_keychains+=("$entry")
+done <<< "$keychain_listing"
+
 work=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/clipper-sign.XXXXXX")
 keychain="$work/signing.keychain-db"
 cleanup() {
+    local status=$?
+    if ! /usr/bin/security list-keychains -d user -s ${original_keychains[@]+"${original_keychains[@]}"}; then
+        echo "Could not restore the original keychain search list." >&2
+        status=1
+    fi
     /usr/bin/security delete-keychain "$keychain" >/dev/null 2>&1 || true
     rm -rf "$work"
+    return "$status"
 }
 trap cleanup EXIT
 keychain_password=$(/usr/bin/openssl rand -base64 48)
@@ -34,6 +51,16 @@ printf '%s' "$RELEASE_CERTIFICATE_BASE64" | /usr/bin/base64 --decode > "$work/ce
     -P "$RELEASE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign >/dev/null
 /usr/bin/security set-key-partition-list -S apple-tool:,apple:,codesign: \
     -s -k "$keychain_password" "$keychain" >/dev/null
+/usr/bin/security list-keychains -d user -s "$keychain" ${original_keychains[@]+"${original_keychains[@]}"}
+
+# Include untrusted identities: self-signed certificates need not be system-trusted.
+identity_report=$(/usr/bin/security find-identity -p codesigning "$keychain")
+expected_sha1=$(printf '%s' "$RELEASE_CERTIFICATE_SHA1" | tr '[:lower:]' '[:upper:]')
+if [[ "$identity_report" != *"$expected_sha1"* ]]; then
+    echo "The imported keychain has no matching certificate/private-key identity." >&2
+    printf '%s\n' "$identity_report" >&2
+    exit 1
+fi
 
 # The certificate anchors the default designated requirement across different builds.
 # No custom identifier-only requirement or system trust changes are needed.
