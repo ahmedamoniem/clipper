@@ -7,6 +7,11 @@ struct ClipboardPopupView: View {
     let onSelect: (ClipboardItem) -> Void
     let onClose: () -> Void
 
+    private enum SectionID: Hashable {
+        case pinned
+        case recent
+    }
+
     private var filteredItems: [ClipboardItem] {
         store.filteredItems(query: viewModel.searchText)
     }
@@ -60,7 +65,7 @@ struct ClipboardPopupView: View {
                 ScrollViewReader { proxy in
                     List(selection: $viewModel.selectedId) {
                         if !pinnedItems.isEmpty {
-                            Section("Pinned") {
+                            Section {
                                 ForEach(pinnedItems) { item in
                                     ClipboardRowView(item: item)
                                         .tag(item.id)
@@ -71,10 +76,13 @@ struct ClipboardPopupView: View {
                                             onSelect(item)
                                         }
                                 }
+                            } header: {
+                                Text("Pinned")
+                                    .id(SectionID.pinned)
                             }
                         }
                         
-                        Section("Recent") {
+                        Section {
                             ForEach(recentItems) { item in
                                 ClipboardRowView(item: item)
                                     .tag(item.id)
@@ -85,25 +93,27 @@ struct ClipboardPopupView: View {
                                         onSelect(item)
                                     }
                             }
+                        } header: {
+                            Text("Recent")
+                                .id(SectionID.recent)
                         }
                     }
                     .listStyle(.inset)
                     .onChange(of: viewModel.selectedId) { _, newId in
                         if let newId {
                             withAnimation(.easeInOut(duration: 0.15)) {
-                                proxy.scrollTo(newId, anchor: .none)
+                                scrollToSelection(newId, using: proxy)
                             }
                         }
                     }
                     .onChange(of: viewModel.focusToken) { _, _ in
                         if let selectedId = viewModel.selectedId {
-                            proxy.scrollTo(selectedId, anchor: .top)
+                            scrollToSelection(selectedId, using: proxy)
                         }
                     }
                     .onAppear {
-                        // Fresh Start: Ensure we scroll to the 'Spotlight' selection when shown
                         if let selectedId = viewModel.selectedId {
-                            proxy.scrollTo(selectedId, anchor: .top)
+                            scrollToSelection(selectedId, using: proxy)
                         }
                     }
                 }
@@ -141,6 +151,17 @@ struct ClipboardPopupView: View {
             }
         }
         .background(hiddenActions)
+    }
+
+    private func scrollToSelection(_ id: ClipboardItem.ID, using proxy: ScrollViewProxy) {
+        // Align the header, not its first row, so the floating header cannot cover the selection.
+        if id == recentItems.first?.id {
+            proxy.scrollTo(SectionID.recent, anchor: .top)
+        } else if id == pinnedItems.first?.id {
+            proxy.scrollTo(SectionID.pinned, anchor: .top)
+        } else {
+            proxy.scrollTo(id, anchor: .none)
+        }
     }
 
     private var footerView: some View {
