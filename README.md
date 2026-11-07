@@ -61,7 +61,9 @@ Clipper tracks your clipboard history in the background, allowing you to recall 
 3. Drag `Clipper.app` into **Applications**, then open it.
 
 The app requires macOS 14 or later and supports Apple silicon and Intel Macs.
-Downloads are ad hoc signed and are not notarized by Apple.
+Downloads are not notarized by Apple. Older releases are ad hoc signed; the
+persistent self-signed release identity described below allows future updates to
+keep the same code identity without a paid Apple Developer membership.
 
 ### Releases
 
@@ -71,6 +73,11 @@ ZIP, and publishes it with generated release notes. Release versions combine the
 app's marketing version with the workflow run number, for example `v1.0.42`.
 The ZIP filename stays `Clipper-macOS.zip`; the version is recorded in the release
 tag and app bundle.
+
+Release signing uses a persistent certificate stored in GitHub Actions secrets.
+See [release signing setup](docs/release-signing.md) before merging the signing
+workflow change. Publishing fails if the identity is missing rather than falling
+back to an ad hoc signature that would break permission continuity.
 
 ### Build from Source
 

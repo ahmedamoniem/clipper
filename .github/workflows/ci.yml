@@ -24,13 +24,27 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
-      - name: Build and sign
+      - name: Check release signing configuration
+        env:
+          RELEASE_CERTIFICATE_BASE64: ${{ secrets.RELEASE_CERTIFICATE_BASE64 }}
+          RELEASE_CERTIFICATE_PASSWORD: ${{ secrets.RELEASE_CERTIFICATE_PASSWORD }}
+          RELEASE_CERTIFICATE_SHA1: ${{ vars.RELEASE_CERTIFICATE_SHA1 }}
+        run: |
+          : "${RELEASE_CERTIFICATE_BASE64:?Configure the persistent release certificate before publishing}"
+          : "${RELEASE_CERTIFICATE_PASSWORD:?Configure the certificate password before publishing}"
+          : "${RELEASE_CERTIFICATE_SHA1:?Configure the certificate fingerprint before publishing}"
+      - name: Build Release app
         run: |
           xcodebuild -project Clipper.xcodeproj -scheme Clipper -configuration Release \
             -destination 'generic/platform=macOS' -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" build
-          codesign --verify --deep --strict "$APP_PATH"
+      - name: Sign with persistent release identity
+        env:
+          RELEASE_CERTIFICATE_BASE64: ${{ secrets.RELEASE_CERTIFICATE_BASE64 }}
+          RELEASE_CERTIFICATE_PASSWORD: ${{ secrets.RELEASE_CERTIFICATE_PASSWORD }}
+          RELEASE_CERTIFICATE_SHA1: ${{ vars.RELEASE_CERTIFICATE_SHA1 }}
+        run: bash scripts/sign-release.sh
       - name: Package ZIP
         run: ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Clipper-macOS.zip
       - name: Publish release
