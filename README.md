@@ -91,6 +91,13 @@ Each GitHub release publishes a `clipper.rb` cask file as a release asset, so no
 * **⌨️ Auto-Paste Mechanism:** This feature is **disabled by default**. When enabled, it utilizes macOS Accessibility permissions to send a `Cmd + V` command to the application that was focused before the Clipper popup appeared.
 
 ---
+## macOS Development Skills
+
+See the [macOS development guide](docs/macos-development.md) for reusable Codex
+skills, researched approach comparisons, and practical validation guidance focused
+on simplicity.
+
+---
 ## 🗺 Roadmap
 
 - [ ] <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/image.svg" width="16" height="16" /> Image & Rich Text support
