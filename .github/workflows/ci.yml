@@ -1,28 +1,42 @@
 name: Build and Unit Tests
-
-on:
-  push:
-  pull_request:
+on: [push, pull_request]
+permissions: {contents: read}
 
 jobs:
   build-and-test:
     runs-on: macos-latest
-    env:
-      XCODEBUILD_COMMON_ARGS: -project Clipper.xcodeproj -scheme Clipper -configuration Debug -derivedDataPath build CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES
-      XCODE_TEST_DESTINATION: platform=macOS
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build and test
+        run: >-
+          xcodebuild -project Clipper.xcodeproj -scheme Clipper -configuration Debug
+          -destination 'platform=macOS' -derivedDataPath build
+          CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
 
-      - name: Build (Debug, unsigned)
+  build-and-release:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+    permissions: {contents: write}
+    env:
+      APP_PATH: build/Build/Products/Release/Clipper.app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+      - name: Build and sign
         run: |
-          xcodebuild $XCODEBUILD_COMMON_ARGS build
-
-      - name: Run unit tests
+          xcodebuild -project Clipper.xcodeproj -scheme Clipper -configuration Release \
+            -destination 'generic/platform=macOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- ONLY_ACTIVE_ARCH=NO \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" build
+          codesign --verify --deep --strict "$APP_PATH"
+      - name: Package ZIP
+        run: ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Clipper-macOS.zip
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -o pipefail
-          xcodebuild \
-            $XCODEBUILD_COMMON_ARGS \
-            -destination "$XCODE_TEST_DESTINATION" \
-            test | tee build/xcodebuild-test.log
+          VERSION="v$(plutil -extract CFBundleShortVersionString raw -o - "$APP_PATH/Contents/Info.plist").$GITHUB_RUN_NUMBER"
+          gh release create "$VERSION" Clipper-macOS.zip --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --title "Clipper $VERSION" --generate-notes

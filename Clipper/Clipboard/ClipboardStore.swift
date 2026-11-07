@@ -1,4 +1,4 @@
-import SwiftUI
+import AppKit
 import Observation
 
 @available(macOS 14.0, *)
@@ -6,122 +6,115 @@ import Observation
 @MainActor
 final class ClipboardStore {
     private(set) var items: [ClipboardItem] = []
+    private(set) var persistenceError: String?
+    let settings: AppSettings
+    let storageURL: URL
 
-    private let storageURLOverride: URL?
     private let saveDelay: TimeInterval
     private let saveQueue = DispatchQueue(label: "Clipper.ClipboardStore.Save", qos: .utility)
-    private var saveWorkItem: DispatchWorkItem?
+    @ObservationIgnored private var saveWorkItem: DispatchWorkItem?
+    @ObservationIgnored private var saveGeneration = 0
+    @ObservationIgnored private var canSave = true
+    @ObservationIgnored private var pendingClear = false
 
-    init(storageURL: URL? = nil, saveDelay: TimeInterval = 0.5) {
-        self.storageURLOverride = storageURL
+    init(storageURL: URL? = nil, saveDelay: TimeInterval = 0.5, settings: AppSettings? = nil) {
+        self.settings = settings ?? .shared
+        self.storageURL = storageURL ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Clipper", isDirectory: true)
+            .appendingPathComponent("clipboard_history.json")
         self.saveDelay = saveDelay
         loadFromDisk()
-        
-        observeHistoryLimit()
-        observeClearHistory()
-        observeAutoClean()
-        cleanOldItems()
+        observeRetentionSettings()
+        applyRetention()
     }
 
-    private func observeHistoryLimit() {
-        _ = withObservationTracking {
-            AppSettings.shared.historyLimit
+    private func observeRetentionSettings() {
+        withObservationTracking {
+            _ = settings.historyLimit
+            _ = settings.autoCleanEnabled
+            _ = settings.autoCleanDays
         } onChange: { [weak self] in
             Task { @MainActor in
-                self?.pruneToLimit()
-                // Re-establish tracking for subsequent changes
-                self?.observeHistoryLimit()
+                guard let self else { return }
+                self.observeRetentionSettings()
+                self.applyRetention()
             }
         }
     }
-    
-    private func observeClearHistory() {
-        NotificationCenter.default.addObserver(forName: Notification.Name("ClearClipboardHistory"), object: nil, queue: .main) { [weak self] _ in
-            self?.items.removeAll()
-        }
-    }
-    
-    private func observeAutoClean() {
-        _ = withObservationTracking {
-            AppSettings.shared.autoCleanEnabled
-            AppSettings.shared.autoCleanDays
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                self?.cleanOldItems()
-                self?.observeAutoClean()
-            }
-        }
-    }
-    
-    private func cleanOldItems() {
-        guard AppSettings.shared.autoCleanEnabled else { return }
-        
-        let days = AppSettings.shared.autoCleanDays
-        let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
-        
+
+    func applyRetention(now: Date = Date()) {
         let originalCount = items.count
-        items.removeAll { item in
-            !item.isPinned && item.timestamp < cutoffDate
+        if settings.autoCleanEnabled,
+           let cutoff = Calendar.current.date(byAdding: .day, value: -settings.autoCleanDays, to: now) {
+            items.removeAll { !$0.isPinned && $0.timestamp < cutoff }
         }
-        
-        if items.count < originalCount {
-            saveDebounced(snapshot: items)
+        pruneToLimit()
+        if items.count != originalCount {
+            saveDebounced()
         }
     }
 
     func add(text: String) {
         let normalized = normalize(text)
         guard !normalized.isEmpty else { return }
-
-        // Don't remove if the existing item is pinned, just keep it
-        if let existingIndex = items.firstIndex(where: { $0.fullText != nil && normalize($0.fullText!) == normalized }) {
-            if items[existingIndex].isPinned {
-                // If pinned, just update its timestamp to bring it to the top of history? 
-                // No, let's keep pins stable and just not add a duplicate to history.
-                return 
-            }
-            items.remove(at: existingIndex)
+        if let index = items.firstIndex(where: { $0.fullText.map(normalize) == normalized }) {
+            guard !items[index].isPinned else { return }
+            items.remove(at: index)
         }
-
-        let sourceAppId = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date(), sourceAppBundleId: sourceAppId, isPinned: false)
+        let item = ClipboardItem(id: UUID(), fullText: text, timestamp: Date(),
+                                 sourceAppBundleId: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
         items.insert(item, at: 0)
-
         pruneToLimit()
-        saveDebounced(snapshot: items)
+        saveDebounced()
     }
 
     func togglePin(id: UUID) {
-        if let index = items.firstIndex(where: { $0.id == id }) {
-            items[index].isPinned.toggle()
-            // Prune if we just unpinned something while over the limit
-            if !items[index].isPinned {
-                pruneToLimit()
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        items[index].isPinned.toggle()
+        applyRetention()
+        saveDebounced()
+    }
+
+    /// Serialize with any running save so a stale snapshot cannot resurrect deleted clips.
+    @discardableResult
+    func clear() -> Bool {
+        items.removeAll()
+        pendingClear = true
+        canSave = true // Explicit deletion also permits replacing unreadable history.
+        return flush()
+    }
+
+    /// Used before termination and destructive actions; also drains earlier queued writes.
+    @discardableResult
+    func flush() -> Bool {
+        saveWorkItem?.cancel()
+        saveWorkItem = nil
+        saveGeneration += 1
+        guard canSave else { return false }
+        let snapshot = items
+        let url = storageURL
+        do {
+            let clearing = pendingClear
+            try saveQueue.sync {
+                try Self.write(snapshot, to: url)
+                if clearing { try Self.removeAuxiliaryHistory(beside: url) }
             }
-            saveDebounced(snapshot: items)
+            pendingClear = false
+            persistenceError = nil
+            return true
+        } catch {
+            persistenceError = "Could not save clipboard history. Changes may be lost when Clipper quits."
+            return false
         }
     }
 
     private func pruneToLimit() {
-        let limit = AppSettings.shared.historyLimit
-        
-        // Count regular items (not pinned)
-        let pinnedCount = items.filter { $0.isPinned }.count
-        let totalAllowed = limit + pinnedCount
-        
-        if items.count > totalAllowed {
-            // We need to remove the oldest non-pinned items
-            var nonPinnedIndices = items.enumerated()
-                .filter { !$0.element.isPinned }
-                .map { $0.offset }
-            
-            if nonPinnedIndices.count > limit {
-                let toRemove = nonPinnedIndices.suffix(nonPinnedIndices.count - limit)
-                // Remove from highest index to lowest to avoid shifting
-                for index in toRemove.sorted(by: >) {
-                    items.remove(at: index)
-                }
-            }
+        var recentCount = 0
+        let limit = settings.historyLimit
+        items.removeAll { item in
+            guard !item.isPinned else { return false }
+            recentCount += 1
+            return recentCount > limit
         }
     }
 
@@ -131,28 +124,20 @@ final class ClipboardStore {
         return items.filter { $0.fullText?.localizedCaseInsensitiveContains(trimmed) ?? false }
     }
 
-    private func storageURL() -> URL? {
-        if let storageURLOverride {
-            return storageURLOverride
-        }
-        let fileManager = FileManager.default
-        guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        return base.appendingPathComponent("Clipper", isDirectory: true)
-            .appendingPathComponent("clipboard_history.json")
-    }
-
     private func loadFromDisk() {
-        guard let url = storageURL() else { return }
+        guard FileManager.default.fileExists(atPath: storageURL.path) else { return }
         do {
-            let data = try Data(contentsOf: url)
-            let decoded = try JSONDecoder().decode([ClipboardItem].self, from: data)
-            // Load everything, then let pruneToLimit handle the logic correctly
-            items = decoded
-            pruneToLimit()
+            items = try JSONDecoder().decode([ClipboardItem].self, from: Data(contentsOf: storageURL))
         } catch {
-            Logging.debug("Failed to load history: \(error)")
+            // Preserve incompatible/corrupt data before allowing a new snapshot to replace it.
+            let backupURL = storageURL.appendingPathExtension("unreadable-\(UUID().uuidString)")
+            do {
+                try FileManager.default.moveItem(at: storageURL, to: backupURL)
+                persistenceError = "Could not load history. The original file was preserved beside clipboard_history.json."
+            } catch {
+                canSave = false
+                persistenceError = "Could not load or preserve history. Saving is disabled to protect the original file."
+            }
         }
     }
 
@@ -160,32 +145,52 @@ final class ClipboardStore {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func saveDebounced(snapshot: [ClipboardItem]) {
+    private func saveDebounced() {
         saveWorkItem?.cancel()
-
-        if saveDelay <= 0 {
-            saveToDisk(snapshot: snapshot)
+        guard canSave else { return }
+        if saveDelay <= 0 || pendingClear {
+            flush()
             return
         }
-
+        saveGeneration += 1
+        let generation = saveGeneration
+        let snapshot = items
+        let url = storageURL
         let workItem = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            self.saveToDisk(snapshot: snapshot)
+            let succeeded: Bool
+            do {
+                try Self.write(snapshot, to: url)
+                succeeded = true
+            } catch {
+                succeeded = false
+            }
+            Task { @MainActor [weak self] in
+                guard let self, self.saveGeneration == generation else { return }
+                self.persistenceError = succeeded ? nil : "Could not save clipboard history. Changes may be lost when Clipper quits."
+            }
         }
-
         saveWorkItem = workItem
         saveQueue.asyncAfter(deadline: .now() + saveDelay, execute: workItem)
     }
 
-    private func saveToDisk(snapshot: [ClipboardItem]) {
-        guard let url = storageURL() else { return }
-        do {
-            let directory = url.deletingLastPathComponent()
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: nil)
-            let data = try JSONEncoder().encode(snapshot)
-            try data.write(to: url, options: [.atomic])
-        } catch {
-            Logging.debug("Failed to save history: \(error)")
+    // Queue work receives only value snapshots and never reads main-actor state.
+    nonisolated private static func write(_ snapshot: [ClipboardItem], to url: URL) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let data = try JSONEncoder().encode(snapshot)
+        try data.write(to: url, options: .atomic)
+    }
+
+    nonisolated private static func removeAuxiliaryHistory(beside url: URL) throws {
+        let manager = FileManager.default
+        let directory = url.deletingLastPathComponent()
+        let files = try manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+        for file in files where file.lastPathComponent.hasPrefix(url.lastPathComponent + ".unreadable-")
+            || file.lastPathComponent == "clipboard_images" {
+            try manager.removeItem(at: file)
         }
+    }
+
+    deinit {
+        saveWorkItem?.cancel()
     }
 }

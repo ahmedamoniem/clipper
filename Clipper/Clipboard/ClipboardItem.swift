@@ -53,13 +53,12 @@ struct ClipboardItem: Identifiable, Codable, Equatable {
         self.isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
     }
     
-    var isImage: Bool {
-        contentType == .image
-    }
-
     var previewText: String {
         if contentType == .image {
-            if let dimensions = imageDimensions {
+            if let dimensions = imageDimensions,
+               dimensions.width.isFinite, dimensions.height.isFinite,
+               dimensions.width >= 0, dimensions.height >= 0,
+               dimensions.width < CGFloat(Int.max), dimensions.height < CGFloat(Int.max) {
                 return "Image (\(Int(dimensions.width))×\(Int(dimensions.height)))"
             }
             return "Image"

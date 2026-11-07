@@ -4,7 +4,7 @@ import AppKit
 enum HotkeyFormatter {
     static func describe(keyCode: Int, modifierFlags: Int) -> String {
         var parts: [String] = []
-        let carbonMods = UInt32(modifierFlags)
+        let carbonMods = (UInt32(exactly: modifierFlags) ?? 0)
         
         if carbonMods & UInt32(cmdKey) != 0 { parts.append("⌘") }
         if carbonMods & UInt32(optionKey) != 0 { parts.append("⌥") }

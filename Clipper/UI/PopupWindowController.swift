@@ -1,10 +1,11 @@
-    import AppKit
+import AppKit
 import SwiftUI
 
 @available(macOS 14.0, *)
 @MainActor
 final class PopupWindowController: NSWindowController, NSWindowDelegate {
     private let store: ClipboardStore
+    private var isClosing = false
     private let viewModel = PopupViewModel()
     private var previousApp: NSRunningApplication?
 
@@ -15,7 +16,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
     init(store: ClipboardStore) {
         self.store = store
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 360, height: 420),
+            contentRect: NSRect(x: 0, y: 0, width: 360, height: 480),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -33,14 +34,10 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
         window?.delegate = self
 
         let contentView = ClipboardPopupView(store: store, viewModel: viewModel) { [weak self] item in
-            if item.isImage {
-                // Image already copied to pasteboard in ClipboardPopupView
-            } else if let text = item.fullText {
-                Self.copyToPasteboard(text)
-            }
-            guard let self else { return }
+            guard let self, let text = item.fullText else { return }
+            Self.copyToPasteboard(text)
             let targetApp = previousApp
-            if AutoPaste.isTrusted {
+            if store.settings.autoPasteEnabled && AutoPaste.isTrusted {
                 closePopup(restoreFocus: false)
                 AutoPaste.paste(into: targetApp)
             } else {
@@ -60,6 +57,8 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
 
     func show() {
         guard let window = window else { return }
+        AutoPaste.cancelPendingPaste()
+        store.applyRetention()
         let defaultSelectionId = store.items.first(where: { !$0.isPinned })?.id ?? store.items.first?.id
         viewModel.resetForShow(defaultSelectionId: defaultSelectionId)
         previousApp = NSWorkspace.shared.frontmostApplication
@@ -73,7 +72,7 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowDidResignKey(_ notification: Notification) {
-        close()
+        closePopup(restoreFocus: false)
     }
 
     private func position(window: NSWindow) {
@@ -92,19 +91,18 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func closePopup(restoreFocus: Bool) {
+        guard !isClosing, isVisible else { return }
+        isClosing = true
+        let target = previousApp
+        previousApp = nil
+        // orderOut can synchronously resign key; never restore focus from that callback.
+        let shouldRestore = restoreFocus && NSApp.isActive && window?.isKeyWindow == true
         window?.orderOut(nil)
-        if restoreFocus {
-            restorePreviousApp()
+        if shouldRestore, let target, !target.isTerminated,
+           target.processIdentifier != ProcessInfo.processInfo.processIdentifier {
+            target.activate(options: [])
         }
-    }
-
-    private func restorePreviousApp() {
-        guard let previousApp else { return }
-        self.previousApp = nil
-        if previousApp.bundleIdentifier == Bundle.main.bundleIdentifier {
-            return
-        }
-        previousApp.activate(options: [])
+        isClosing = false
     }
 
     private static func copyToPasteboard(_ text: String) {
@@ -120,7 +118,6 @@ final class PopupWindowController: NSWindowController, NSWindowDelegate {
 final class PopupViewModel {
     var searchText: String = ""
     var selectedId: ClipboardItem.ID?
-    var hoveredId: ClipboardItem.ID?
     var focusToken: UUID = UUID()
     var showSettings: Bool = false
     var isTrusted: Bool = AutoPaste.isTrusted
@@ -128,7 +125,6 @@ final class PopupViewModel {
     func resetForShow(defaultSelectionId: ClipboardItem.ID?) {
         searchText = ""
         selectedId = defaultSelectionId
-        hoveredId = nil
         focusToken = UUID()
         refreshTrustStatus()
     }

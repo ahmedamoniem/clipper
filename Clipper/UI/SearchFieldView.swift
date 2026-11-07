@@ -21,6 +21,7 @@ struct SearchFieldView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSSearchField, context: Context) {
+        context.coordinator.parent = self
         if nsView.stringValue != text {
             nsView.stringValue = text
         }
@@ -28,13 +29,15 @@ struct SearchFieldView: NSViewRepresentable {
         if context.coordinator.lastFocusToken != focusToken {
             context.coordinator.lastFocusToken = focusToken
             DispatchQueue.main.async {
-                nsView.window?.makeFirstResponder(nsView)
+                guard context.coordinator.lastFocusToken == focusToken,
+                      let window = nsView.window, window.isKeyWindow else { return }
+                window.makeFirstResponder(nsView)
             }
         }
     }
 
-    final class Coordinator: NSObject, NSSearchFieldDelegate, NSTextFieldDelegate {
-        let parent: SearchFieldView
+    final class Coordinator: NSObject, NSSearchFieldDelegate {
+        var parent: SearchFieldView
         var lastFocusToken: UUID?
 
         init(parent: SearchFieldView) {
