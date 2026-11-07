@@ -52,9 +52,15 @@ Configure these before merging the workflow change. Only the release job on a
 push to `main` receives these secrets. The runner imports the identity into a
 temporary keychain, signs the completed universal app, verifies both architectures
 against the configured certificate fingerprint and bundle ID, and removes the
-keychain and decoded identity on exit. A missing or incorrect identity stops
-publication. The signing script currently assumes Clipper's single-executable
+keychain and decoded identity on exit. During signing it adds the keychain to the
+user search list and restores the original list on exit. A missing or incorrect
+identity stops publication. The signing script currently assumes Clipper's single-executable
 bundle; adding embedded code requires signing it inside-out as well.
+
+Pull requests also run `bash scripts/test-release-signing.sh` on the hosted macOS
+runner. It creates a disposable identity, signs two different universal app
+fixtures, checks cross-version identity, and rejects missing or incorrect signing
+configuration. This test does not use the permanent release secrets.
 
 ## Update behavior and verification
 
